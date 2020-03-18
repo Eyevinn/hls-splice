@@ -1,0 +1,18 @@
+{
+  "name": "@eyevinn/hls-splice",
+  "version": "0.1.0",
+  "description": "NPM library to splice HLS VOD",
+  "main": "index.js",
+  "scripts": {
+    "test": "$(npm bin)/jasmine"
+  },
+  "author": "Eyevinn Technology <work@eyevinn.se>",
+  "license": "MIT",
+  "devDependencies": {
+    "jasmine": "^3.5.0"
+  },
+  "dependencies": {
+    "@eyevinn/m3u8": "^0.1.0",
+    "request": "^2.88.2"
+  }
+}

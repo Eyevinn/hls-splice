@@ -2,6 +2,11 @@ const m3u8 = require('@eyevinn/m3u8');
 const request = require('request');
 const url = require('url');
 
+const findNearestBw = (bw, array) => {
+  // TO BE IMPLEMENTED
+  return array.find(el => bw === el);
+};
+
 class HLSSpliceVod {
   /**
    * Create an HLSSpliceVod instance
@@ -59,21 +64,30 @@ class HLSSpliceVod {
 
   insertAdAt(offset, adMasterManifestUri, _injectAdMasterManifest, _injectAdMediaManifest) {
     return new Promise((resolve, reject) => {
-      Object.keys(this.playlists).map(bw => {
-        let pos = 0;
-        let i = 0;
-        while(pos < offset) {
-          const plItem = this.playlists[bw].items.PlaylistItem[i];
-          pos += (plItem.get('duration') * 1000);
-          i++;
+      this._parseAdMasterManifest(adMasterManifestUri, _injectAdMasterManifest, _injectAdMediaManifest)
+      .then(ad => {
+        const bandwidths = Object.keys(this.playlists);
+        for (let b = 0; b < bandwidths.length; b++) {
+          const bw = bandwidths[b];
+          const adPlaylist = ad.playlist[findNearestBw(bw, Object.keys(ad.playlist))];
+          let pos = 0;
+          let i = 0;
+          while(pos < offset) {
+            const plItem = this.playlists[bw].items.PlaylistItem[i];
+            pos += (plItem.get('duration') * 1000);
+            i++;
+          }
+          this.playlists[bw].items.PlaylistItem[i].set('discontinuity', true);
+          this.playlists[bw].items.PlaylistItem[i].set('cueout', 15);
+          const adLength = adPlaylist.items.PlaylistItem.length;
+          for (let j = 0; j < adLength; j++) {
+            this.playlists[bw].items.PlaylistItem.splice(i + j + 1, 0, adPlaylist.items.PlaylistItem[j]);
+          }
+          this.playlists[bw].items.PlaylistItem[i + adLength + 1].set('cuein', true);
+          this.playlists[bw].items.PlaylistItem[i + adLength + 1].set('discontinuity', true);
         }
-        this.playlists[bw].items.PlaylistItem[i].set('discontinuity', true);
-        this.playlists[bw].items.PlaylistItem[i].set('cueout', 15);
-        this.playlists[bw].items.PlaylistItem.splice(i + 1, 0, m3u8.M3U.PlaylistItem.create({ uri: 'ad.ts', duration: 3 }));
-        this.playlists[bw].items.PlaylistItem[i + 2].set('cuein', true);
-        this.playlists[bw].items.PlaylistItem[i + 2].set('discontinuity', true);
+        resolve();  
       });
-      resolve();
     });
   }
 
@@ -112,6 +126,65 @@ class HLSSpliceVod {
         }
       } else {
         _injectMediaManifest(bandwidth).pipe(parser);
+      }
+    });
+  }
+
+  _parseAdMasterManifest(manifestUri, _injectAdMasterManifest, _injectAdMediaManifest) {
+    return new Promise((resolve, reject) => {
+      let ad = {};
+      const parser = m3u8.createStream();
+
+      parser.on('m3u', m3u => {
+        let mediaManifestPromises = [];
+        ad.master = m3u;
+        ad.playlist = {};
+
+        let baseUrl;
+        const m = this.masterManifestUri.match(/^(.*)\/.*?$/);
+        if (m) {
+          baseUrl = m[1] + '/';
+        }
+        for (let i = 0; i < m3u.items.StreamItem.length; i++) {
+          const streamItem = m3u.items.StreamItem[i];
+          const mediaManifestUrl = url.resolve(baseUrl, streamItem.get('uri'));
+          const p = new Promise((res, rej) => {
+            const mediaManifestParser = m3u8.createStream();
+
+            mediaManifestParser.on('m3u', m3u => {
+              ad.playlist[streamItem.get('bandwidth')] = m3u;
+              res();
+            });
+
+            if (!_injectAdMediaManifest) {
+              try {
+                request({ uri: mediaManifestUrl, gzip: true })
+                .pipe(mediaManifestParser)
+              } catch (err) {
+                rej(err);
+              }
+            } else {
+              _injectAdMediaManifest(streamItem.get('bandwidth')).pipe(mediaManifestParser);
+            }
+          });
+          mediaManifestPromises.push(p);
+        }
+
+        Promise.all(mediaManifestPromises)
+        .then(() => {
+          resolve(ad);
+        });
+      });
+
+      if (!_injectAdMasterManifest) {
+        try {
+          request({ uri: this.masterManifestUri, gzip: true })
+          .pipe(parser)
+        } catch (exc) {
+          reject(exc);
+        }
+      } else {
+        _injectAdMasterManifest().pipe(parser);
       }
     });
   }

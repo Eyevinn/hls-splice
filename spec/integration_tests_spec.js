@@ -1,7 +1,7 @@
 const HLSSpliceVod = require('../index.js');
 
 describe("HLSSpliceVod", () => {
-  it("cat download and parse an HLS VOD", done => {
+  it("can download and parse an HLS VOD", done => {
     const hlsVod = new HLSSpliceVod('https://maitv-vod.lab.eyevinn.technology/stswe17-ozer.mp4/master.m3u8');
     hlsVod.load()
     .then(() => {
@@ -11,5 +11,18 @@ describe("HLSSpliceVod", () => {
       expect(mediaManifest.match(/2000-00213.ts/)).not.toBe(null);
       done();
     });
+  });
+
+  it("can insert ads in an HLS VOD", done => {
+    const hlsVod = new HLSSpliceVod('https://maitv-vod.lab.eyevinn.technology/stswe17-ozer.mp4/master.m3u8');
+    hlsVod.load()
+    .then(() => {
+      return hlsVod.insertAdAt(35000, 'https://maitv-vod.lab.eyevinn.technology/ads/apotea-15s.mp4/master.m3u8');
+    })
+    .then(() => {
+      const mediaManifest = hlsVod.getMediaManifest(4928000);
+      expect(mediaManifest.match(/#EXT-X-CUE-OUT:DURATION=15\s+#EXTINF:10.8800,\s+https:\/\/maitv-vod.lab.eyevinn.technology\/ads\/apotea-15s.mp4\/2000\/2000-00000.ts/)).not.toBe(null);
+      done();
+    })
   });
 });

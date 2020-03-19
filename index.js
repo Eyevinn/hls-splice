@@ -4,13 +4,19 @@ const url = require('url');
 
 const findNearestBw = (bw, array) => {
   // TO BE IMPLEMENTED
-  return array.find(el => bw === el);
+  const sorted = array.sort((a, b) => b - a);
+  for (let i = 0; i < sorted.length; i++) {
+    if (bw >= sorted[i]) {
+      return sorted[i];
+    }
+  }
+  return sorted[sorted.length - 1];
 };
 
 class HLSSpliceVod {
   /**
    * Create an HLSSpliceVod instance
-   * @param {string} vodManifestUri 
+   * @param {string} vodManifestUrl 
    * @param {Object} options 
    */
   constructor(vodManifestUri, options) {
@@ -19,6 +25,13 @@ class HLSSpliceVod {
     this.baseUrl = null;
     if (options && options.baseUrl) {
       this.baseUrl = options.baseUrl;
+    }
+    if (options && options.absoluteUrls) {
+      const m = this.masterManifestUri.match('^(.*)/.*?');
+      if (m) {
+        this.baseUrl = m[1] + '/';
+      }
+
     }
   }
 
@@ -77,14 +90,14 @@ class HLSSpliceVod {
             pos += (plItem.get('duration') * 1000);
             i++;
           }
-          this.playlists[bw].items.PlaylistItem[i].set('discontinuity', true);
-          this.playlists[bw].items.PlaylistItem[i].set('cueout', 15);
           const adLength = adPlaylist.items.PlaylistItem.length;
           for (let j = 0; j < adLength; j++) {
-            this.playlists[bw].items.PlaylistItem.splice(i + j + 1, 0, adPlaylist.items.PlaylistItem[j]);
+            this.playlists[bw].items.PlaylistItem.splice(i + j, 0, adPlaylist.items.PlaylistItem[j]);
           }
-          this.playlists[bw].items.PlaylistItem[i + adLength + 1].set('cuein', true);
-          this.playlists[bw].items.PlaylistItem[i + adLength + 1].set('discontinuity', true);
+          this.playlists[bw].items.PlaylistItem[i].set('discontinuity', true);
+          this.playlists[bw].items.PlaylistItem[i].set('cueout', 15);
+          this.playlists[bw].items.PlaylistItem[i + adLength].set('cuein', true);
+          this.playlists[bw].items.PlaylistItem[i + adLength].set('discontinuity', true);
         }
         resolve();  
       });
@@ -139,19 +152,31 @@ class HLSSpliceVod {
         let mediaManifestPromises = [];
         ad.master = m3u;
         ad.playlist = {};
+        ad.baseUrl = null;
 
-        let baseUrl;
-        const m = this.masterManifestUri.match(/^(.*)\/.*?$/);
+        const m = manifestUri.match(/^(.*)\/.*?$/);
         if (m) {
-          baseUrl = m[1] + '/';
+          ad.baseUrl = m[1] + '/';
         }
         for (let i = 0; i < m3u.items.StreamItem.length; i++) {
           const streamItem = m3u.items.StreamItem[i];
-          const mediaManifestUrl = url.resolve(baseUrl, streamItem.get('uri'));
+          const mediaManifestUrl = url.resolve(ad.baseUrl, streamItem.get('uri'));
           const p = new Promise((res, rej) => {
             const mediaManifestParser = m3u8.createStream();
 
             mediaManifestParser.on('m3u', m3u => {
+              let baseUrl;
+              const n = mediaManifestUrl.match('^(.*)/.*?');
+              if (n) {
+                baseUrl = n[1] + '/';
+              }
+              for (let j = 0; j < m3u.items.PlaylistItem.length; j++) {
+                let plItem = m3u.items.PlaylistItem[j];
+                const plUri = plItem.get("uri");
+                if (!plUri.match('^http')) {
+                  plItem.set("uri", url.resolve(baseUrl, plUri));
+                }
+              }
               ad.playlist[streamItem.get('bandwidth')] = m3u;
               res();
             });

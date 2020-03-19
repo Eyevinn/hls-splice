@@ -2,9 +2,11 @@
   "name": "@eyevinn/hls-splice",
   "version": "0.1.0",
   "description": "NPM library to splice HLS VOD",
+  "repository": "https://github.com/Eyevinn/hls-splice",
   "main": "index.js",
   "scripts": {
-    "test": "$(npm bin)/jasmine"
+    "test": "$(npm bin)/jasmine",
+    "postversion": "git push && git push --tags"
   },
   "author": "Eyevinn Technology <work@eyevinn.se>",
   "license": "MIT",

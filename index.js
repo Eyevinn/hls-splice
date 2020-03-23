@@ -100,7 +100,7 @@ class HLSSpliceVod {
           this.playlists[bw].items.PlaylistItem[i + adLength].set('discontinuity', true);
         }
         resolve();  
-      });
+      }).catch(reject);
     });
   }
 
@@ -180,10 +180,16 @@ class HLSSpliceVod {
               ad.playlist[streamItem.get('bandwidth')] = m3u;
               res();
             });
+            mediaManifestParser.on('error', err => {
+              rej(err);
+            });
 
             if (!_injectAdMediaManifest) {
               try {
                 request({ uri: mediaManifestUrl, gzip: true })
+                .on('error', err => {
+                  rej(err);
+                })
                 .pipe(mediaManifestParser)
               } catch (err) {
                 rej(err);
@@ -201,9 +207,16 @@ class HLSSpliceVod {
         });
       });
 
+      parser.on('error', err => {
+        reject(err);
+      });
+
       if (!_injectAdMasterManifest) {
         try {
-          request({ uri: this.masterManifestUri, gzip: true })
+          request({ uri: manifestUri, gzip: true })
+          .on('error', err => {
+            reject(err);
+          })
           .pipe(parser)
         } catch (exc) {
           reject(exc);

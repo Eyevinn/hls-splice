@@ -14,7 +14,7 @@
     "jasmine": "^3.5.0"
   },
   "dependencies": {
-    "@eyevinn/m3u8": "^0.1.0",
+    "@eyevinn/m3u8": ">=0.1.1",
     "request": "^2.88.2"
   }
 }

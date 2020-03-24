@@ -20,6 +20,7 @@ describe("HLSSpliceVod", () => {
       }
       return fs.createReadStream(`testvectors/hls1/index_${bwmap[bw]}_av.m3u8`);
     };
+
     mockAdMasterManifest = () => {
       return fs.createReadStream('testvectors/ad1/master.m3u8')
     };
@@ -40,6 +41,19 @@ describe("HLSSpliceVod", () => {
       }
       return fs.createReadStream(`testvectors/ad2/index_${bwmap[bw]}_av.m3u8`);
     };
+
+    mockMasterManifest3 = () => {
+      return fs.createReadStream('testvectors/hls2/master.m3u8')
+    };
+    mockMediaManifest3 = (bw) => {
+      const bwmap = {
+        404000: "0_av",
+        883000: "1_av",
+        136000: "0_a"
+      }
+      return fs.createReadStream(`testvectors/hls2/index_${bwmap[bw]}.m3u8`);
+    };
+
   });
 
   it("can prepend a baseurl on each segment", done => {
@@ -49,6 +63,17 @@ describe("HLSSpliceVod", () => {
       const m3u8 = mockVod.getMediaManifest(4497000);
       const m = m3u8.match('https://baseurl.com/segment3_0_av.ts');
       expect(m).not.toBe(null);
+      done();
+    });
+  });
+
+  it("can preserve master manifest", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8', { baseUrl: 'https://baseurl.com/'});
+    const originalManifest = fs.readFileSync('testvectors/hls2/master.m3u8', { encoding: 'utf8' });
+    mockVod.load(mockMasterManifest3, mockMediaManifest3)
+    .then(() => {
+      const masterManifest = mockVod.getMasterManifest();
+      expect(masterManifest).toEqual(originalManifest);
       done();
     });
   });

@@ -99,6 +99,7 @@ class HLSSpliceVod {
           this.playlists[bw].items.PlaylistItem[i].set('cueout', 15);
           this.playlists[bw].items.PlaylistItem[i + adLength].set('cuein', true);
           this.playlists[bw].items.PlaylistItem[i + adLength].set('discontinuity', true);
+          this.playlists[bw].set('targetDuration', this.targetDuration);
         }
         resolve();  
       }).catch(reject);
@@ -132,6 +133,7 @@ class HLSSpliceVod {
         if (targetDuration > this.targetDuration) {
           this.targetDuration = targetDuration;
         }
+        this.playlists[bandwidth].set('targetDuration', this.targetDuration);
         resolve();
       });
 

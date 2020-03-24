@@ -23,6 +23,7 @@ class HLSSpliceVod {
     this.masterManifestUri = vodManifestUri;
     this.playlists = {};
     this.baseUrl = null;
+    this.targetDuration = 0;
     if (options && options.baseUrl) {
       this.baseUrl = options.baseUrl;
     }
@@ -127,6 +128,10 @@ class HLSSpliceVod {
             plItem.set('uri', this.baseUrl + uri);
           }
         }
+        const targetDuration = this.playlists[bandwidth].get('targetDuration');
+        if (targetDuration > this.targetDuration) {
+          this.targetDuration = targetDuration;
+        }
         resolve();
       });
 
@@ -165,6 +170,9 @@ class HLSSpliceVod {
             const mediaManifestParser = m3u8.createStream();
 
             mediaManifestParser.on('m3u', m3u => {
+              if (m3u.get('targetDuration') > this.targetDuration) {
+                this.targetDuration = m3u.get('targetDuration');
+              }
               let baseUrl;
               const n = mediaManifestUrl.match('^(.*)/.*?');
               if (n) {

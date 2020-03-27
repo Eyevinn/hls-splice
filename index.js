@@ -86,9 +86,9 @@ class HLSSpliceVod {
         if (isPostRoll) {
           let duration = 0;
           this.playlists[bandwidths[0]].items.PlaylistItem.map(plItem => {
-            duration += plItem.get('duration');
+            duration += (plItem.get('duration') * 1000);
           });
-          offset = duration * 1000;
+          offset = duration;
         }
 
         for (let b = 0; b < bandwidths.length; b++) {
@@ -97,7 +97,7 @@ class HLSSpliceVod {
           const adPlaylist = ad.playlist[findNearestBw(bw, Object.keys(ad.playlist))];
           let pos = 0;
           let i = 0;
-          while(pos < offset) {
+          while(pos < offset && i < this.playlists[bw].items.PlaylistItem.length) {
             const plItem = this.playlists[bw].items.PlaylistItem[i];
             pos += (plItem.get('duration') * 1000);
             i++;

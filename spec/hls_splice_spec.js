@@ -40,6 +40,16 @@ describe("HLSSpliceVod", () => {
       }
       return fs.createReadStream(`testvectors/ad2/index_${bwmap[bw]}_av.m3u8`);
     };
+    mockAdMasterManifest3 = () => {
+      return fs.createReadStream('testvectors/ad3/master.m3u8')
+    };
+    mockAdMediaManifest3 = (bw) => {
+      const bwmap = {
+        4397000: "0",
+        2597000: "1"
+      }
+      return fs.createReadStream(`testvectors/ad3/index_${bwmap[bw]}_av.m3u8`);
+    };
   });
 
   it("can prepend a baseurl on each segment", done => {
@@ -122,13 +132,14 @@ describe("HLSSpliceVod", () => {
       return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
     })
     .then(() => {
-      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
+      // This one will go first
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest3, mockAdMediaManifest3);
     })
     .then(() => {
       const m3u8 = mockVod.getMediaManifest(4497000);
       const lines = m3u8.split('\n');
-      expect(lines[8]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
-      expect(lines[20]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
+      expect(lines[8]).toEqual("#EXT-X-CUE-OUT:DURATION=3");
+      expect(lines[12]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
       done();
     });
   });

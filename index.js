@@ -96,7 +96,7 @@ class HLSSpliceVod {
             this.playlists[bw].items.PlaylistItem.splice(i + j, 0, adPlaylist.items.PlaylistItem[j]);
           }
           this.playlists[bw].items.PlaylistItem[i].set('discontinuity', true);
-          this.playlists[bw].items.PlaylistItem[i].set('cueout', 15);
+          this.playlists[bw].items.PlaylistItem[i].set('cueout', ad.duration);
           this.playlists[bw].items.PlaylistItem[i + adLength].set('cuein', true);
           this.playlists[bw].items.PlaylistItem[i + adLength].set('discontinuity', true);
           this.playlists[bw].set('targetDuration', this.targetDuration);
@@ -175,6 +175,7 @@ class HLSSpliceVod {
               if (m3u.get('targetDuration') > this.targetDuration) {
                 this.targetDuration = m3u.get('targetDuration');
               }
+              ad.duration = 0;
               let baseUrl;
               const n = mediaManifestUrl.match('^(.*)/.*?');
               if (n) {
@@ -186,6 +187,7 @@ class HLSSpliceVod {
                 if (!plUri.match('^http')) {
                   plItem.set("uri", url.resolve(baseUrl, plUri));
                 }
+                ad.duration += plItem.get("duration");
               }
               ad.playlist[streamItem.get('bandwidth')] = m3u;
               res();

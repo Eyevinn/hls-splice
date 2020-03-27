@@ -24,7 +24,6 @@ class HLSSpliceVod {
     this.playlists = {};
     this.baseUrl = null;
     this.targetDuration = 0;
-    this.duration = null;
     if (options && options.baseUrl) {
       this.baseUrl = options.baseUrl;
     }
@@ -81,12 +80,20 @@ class HLSSpliceVod {
     return new Promise((resolve, reject) => {
       this._parseAdMasterManifest(adMasterManifestUri, _injectAdMasterManifest, _injectAdMediaManifest)
       .then(ad => {
-        if (offset == -1) {
-          offset = this.duration;
-        }
+        const isPostRoll = (offset == -1);
         const bandwidths = Object.keys(this.playlists);
+
+        if (isPostRoll) {
+          let duration = 0;
+          this.playlists[bandwidths[0]].items.PlaylistItem.map(plItem => {
+            duration += plItem.get('duration');
+          });
+          offset = duration * 1000;
+        }
+
         for (let b = 0; b < bandwidths.length; b++) {
           const bw = bandwidths[b];
+  
           const adPlaylist = ad.playlist[findNearestBw(bw, Object.keys(ad.playlist))];
           let pos = 0;
           let i = 0;
@@ -95,20 +102,30 @@ class HLSSpliceVod {
             pos += (plItem.get('duration') * 1000);
             i++;
           }
+          let insertCueIn = false;
+          if (this.playlists[bw].items.PlaylistItem[this.playlists[bw].items.PlaylistItem.length - 1].get('cuein')) {
+            insertCueIn = true;
+          }
           const adLength = adPlaylist.items.PlaylistItem.length;
           for (let j = 0; j < adLength; j++) {
             this.playlists[bw].items.PlaylistItem.splice(i + j, 0, adPlaylist.items.PlaylistItem[j]);
           }
           this.playlists[bw].items.PlaylistItem[i].set('discontinuity', true);
           this.playlists[bw].items.PlaylistItem[i].set('cueout', ad.duration);
+          if (insertCueIn) {
+            this.playlists[bw].items.PlaylistItem[i].set('cuein', true);
+          }
           if (this.playlists[bw].items.PlaylistItem[i + adLength]) {
             this.playlists[bw].items.PlaylistItem[i + adLength].set('cuein', true);
-            this.playlists[bw].items.PlaylistItem[i + adLength].set('discontinuity', true);  
+            if (!isPostRoll) {
+              this.playlists[bw].items.PlaylistItem[i + adLength].set('discontinuity', true);  
+            }
           } else {
             this.playlists[bw].addPlaylistItem({ 'cuein': true });
           }
           this.playlists[bw].set('targetDuration', this.targetDuration);
         }
+        //console.log(this.playlists[bandwidths[0]].toString());
         resolve();  
       }).catch(reject);
     });
@@ -138,9 +155,6 @@ class HLSSpliceVod {
             plItem.set('uri', this.baseUrl + uri);
           }
         }
-        this.playlists[bandwidth].items.PlaylistItem.map(plItem => {
-          this.duration += (plItem.get('duration') * 1000);
-        });
         const targetDuration = this.playlists[bandwidth].get('targetDuration');
         if (targetDuration > this.targetDuration) {
           this.targetDuration = targetDuration;

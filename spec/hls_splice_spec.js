@@ -178,4 +178,21 @@ describe("HLSSpliceVod", () => {
     })
   });
 
+  it("handles one pre-roll and one post-roll", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
+    })
+    .then(() => {
+      return mockVod.insertAdAt(-1, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[lines.length - 3]).toEqual("#EXT-X-CUE-IN");
+      done();
+    });
+  });
+
 });

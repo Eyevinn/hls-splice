@@ -114,4 +114,22 @@ describe("HLSSpliceVod", () => {
       done();
     });
   });
+
+  it("handles two ads in a row", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
+    })
+    .then(() => {
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[8]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
+      expect(lines[20]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
+      done();
+    });
+  });
 });

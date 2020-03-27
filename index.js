@@ -24,6 +24,7 @@ class HLSSpliceVod {
     this.playlists = {};
     this.baseUrl = null;
     this.targetDuration = 0;
+    this.duration = null;
     if (options && options.baseUrl) {
       this.baseUrl = options.baseUrl;
     }
@@ -80,6 +81,9 @@ class HLSSpliceVod {
     return new Promise((resolve, reject) => {
       this._parseAdMasterManifest(adMasterManifestUri, _injectAdMasterManifest, _injectAdMediaManifest)
       .then(ad => {
+        if (offset == -1) {
+          offset = this.duration;
+        }
         const bandwidths = Object.keys(this.playlists);
         for (let b = 0; b < bandwidths.length; b++) {
           const bw = bandwidths[b];
@@ -97,8 +101,12 @@ class HLSSpliceVod {
           }
           this.playlists[bw].items.PlaylistItem[i].set('discontinuity', true);
           this.playlists[bw].items.PlaylistItem[i].set('cueout', ad.duration);
-          this.playlists[bw].items.PlaylistItem[i + adLength].set('cuein', true);
-          this.playlists[bw].items.PlaylistItem[i + adLength].set('discontinuity', true);
+          if (this.playlists[bw].items.PlaylistItem[i + adLength]) {
+            this.playlists[bw].items.PlaylistItem[i + adLength].set('cuein', true);
+            this.playlists[bw].items.PlaylistItem[i + adLength].set('discontinuity', true);  
+          } else {
+            this.playlists[bw].addPlaylistItem({ 'cuein': true });
+          }
           this.playlists[bw].set('targetDuration', this.targetDuration);
         }
         resolve();  
@@ -111,7 +119,7 @@ class HLSSpliceVod {
   }
 
   getMediaManifest(bw) {
-    return this.playlists[bw].toString();
+    return this.playlists[bw].toString().replace(/^\s*\n/gm, '');
   }
 
   _loadMediaManifest(mediaManifestUri, bandwidth, _injectMediaManifest) {
@@ -119,6 +127,7 @@ class HLSSpliceVod {
       const parser = m3u8.createStream();
 
       parser.on('m3u', m3u => {
+        this.duration = 0;
         if (!this.playlists[bandwidth]) {
           this.playlists[bandwidth] = m3u;
         }
@@ -129,6 +138,9 @@ class HLSSpliceVod {
             plItem.set('uri', this.baseUrl + uri);
           }
         }
+        this.playlists[bandwidth].items.PlaylistItem.map(plItem => {
+          this.duration += (plItem.get('duration') * 1000);
+        });
         const targetDuration = this.playlists[bandwidth].get('targetDuration');
         if (targetDuration > this.targetDuration) {
           this.targetDuration = targetDuration;

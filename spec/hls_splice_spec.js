@@ -143,4 +143,39 @@ describe("HLSSpliceVod", () => {
       done();
     });
   });
+
+  it("handles post-roll ads", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertAdAt(-1, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);      
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[28]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
+      expect(lines[39]).toEqual("#EXT-X-CUE-IN");
+      done();
+    })
+  });
+
+  it("handles two post-roll ads", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertAdAt(-1, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
+    })
+    .then(() => {
+      return mockVod.insertAdAt(-1, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[28]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
+      expect(lines[41]).toEqual("#EXT-X-CUE-IN");
+      expect(lines[52]).toEqual("#EXT-X-CUE-IN");
+      done();
+    })
+  });
+
 });

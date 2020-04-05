@@ -6,12 +6,24 @@
   "main": "index.js",
   "scripts": {
     "test": "$(npm bin)/jasmine",
-    "postversion": "git push && git push --tags"
+    "postversion": "git push && git push --tags",
+    "coverage": "nyc npm test && nyc report",
+    "coveralls": "nyc npm test && nyc report --reporter=text-lcov | coveralls"
   },
   "author": "Eyevinn Technology <work@eyevinn.se>",
+  "contributors": [
+    "Jonas Rydholm Birmé <jonas.birme@eyevinn.se> (Eyevinn Technology AB)"
+  ],
+  "keywords": [
+    "hls",
+    "m3u8",
+    "ssai"
+  ],
   "license": "MIT",
   "devDependencies": {
-    "jasmine": "^3.5.0"
+    "coveralls": "^3.0.11",
+    "jasmine": "^3.5.0",
+    "nyc": "^15.0.1"
   },
   "dependencies": {
     "@eyevinn/m3u8": ">=0.1.1",

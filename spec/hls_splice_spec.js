@@ -144,6 +144,44 @@ describe("HLSSpliceVod", () => {
     });
   });
 
+  it("handles two ads in a row merged into one break", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8', { merge: true });
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
+    })
+    .then(() => {
+      // This one will go first
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest3, mockAdMediaManifest3);
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[8]).toEqual("#EXT-X-CUE-OUT:DURATION=18");
+      done();
+    });
+  });
+
+  it("handles two ads that should not be merged into one break", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8', { merge: true });
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertAdAt(9, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
+    })
+    .then(() => {
+      // This one will go first
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest3, mockAdMediaManifest3);
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[8]).toEqual("#EXT-X-CUE-OUT:DURATION=3");
+      expect(lines[16]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
+      done();
+    });
+  });
+
+
   it("handles post-roll ads", done => {
     const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
     mockVod.load(mockMasterManifest, mockMediaManifest)

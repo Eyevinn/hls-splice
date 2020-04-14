@@ -140,6 +140,7 @@ describe("HLSSpliceVod", () => {
       const lines = m3u8.split('\n');
       expect(lines[8]).toEqual("#EXT-X-CUE-OUT:DURATION=3");
       expect(lines[12]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
+      expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
       done();
     });
   });
@@ -158,6 +159,7 @@ describe("HLSSpliceVod", () => {
       const m3u8 = mockVod.getMediaManifest(4497000);
       const lines = m3u8.split('\n');
       expect(lines[8]).toEqual("#EXT-X-CUE-OUT:DURATION=18");
+      expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
       done();
     });
   });
@@ -177,6 +179,7 @@ describe("HLSSpliceVod", () => {
       const lines = m3u8.split('\n');
       expect(lines[8]).toEqual("#EXT-X-CUE-OUT:DURATION=3");
       expect(lines[16]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
+      expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
       done();
     });
   });
@@ -193,6 +196,7 @@ describe("HLSSpliceVod", () => {
       const lines = m3u8.split('\n');
       expect(lines[28]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
       expect(lines[39]).toEqual("#EXT-X-CUE-IN");
+      expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
       done();
     })
   });
@@ -212,6 +216,7 @@ describe("HLSSpliceVod", () => {
       expect(lines[28]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
       expect(lines[41]).toEqual("#EXT-X-CUE-IN");
       expect(lines[52]).toEqual("#EXT-X-CUE-IN");
+      expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
       done();
     })
   });
@@ -229,6 +234,7 @@ describe("HLSSpliceVod", () => {
       const m3u8 = mockVod.getMediaManifest(4497000);
       const lines = m3u8.split('\n');
       expect(lines[lines.length - 3]).toEqual("#EXT-X-CUE-IN");
+      expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
       done();
     });
   });

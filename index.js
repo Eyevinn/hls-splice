@@ -157,6 +157,7 @@ class HLSSpliceVod {
         }
       }
     }
+    this.playlists[bw].set('playlistType', "VOD"); // Ensure playlist type is VOD
     return this.playlists[bw].toString().replace(/^\s*\n/gm, '');
   }
 

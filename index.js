@@ -128,23 +128,6 @@ class HLSSpliceVod {
             this.playlists[bw].addPlaylistItem({ 'cuein': true });
           }
           this.playlists[bw].set('targetDuration', this.targetDuration);
-          if (this.mergeBreaks) {
-            let adBreakDuration = 0;
-            let itemToUpdate = null;
-            for (let i = 0; i < this.playlists[bw].items.PlaylistItem.length; i++) {
-              if (this.playlists[bw].items.PlaylistItem[i].get('cueout') && this.playlists[bw].items.PlaylistItem[i].get('cuein')) {
-                adBreakDuration += this.playlists[bw].items.PlaylistItem[i].get('cueout');
-                this.playlists[bw].items.PlaylistItem[i].set('cueout', null);
-                this.playlists[bw].items.PlaylistItem[i].set('cuein', false);
-              } else if (this.playlists[bw].items.PlaylistItem[i].get('cueout') && !this.playlists[bw].items.PlaylistItem[i].get('cuein')) {
-                adBreakDuration = 0;
-                itemToUpdate = this.playlists[bw].items.PlaylistItem[i];
-              } else if (!this.playlists[bw].items.PlaylistItem[i].get('cueout') && this.playlists[bw].items.PlaylistItem[i].get('cuein')) {
-                const cueOut = itemToUpdate.get('cueout');
-                itemToUpdate.set('cueout', cueOut + adBreakDuration);
-              }
-            }
-          }  
         }
         //console.log(this.playlists[bandwidths[0]].toString());
         resolve();  
@@ -157,6 +140,23 @@ class HLSSpliceVod {
   }
 
   getMediaManifest(bw) {
+    if (this.mergeBreaks) {
+      let adBreakDuration = 0;
+      let itemToUpdate = null;
+      for (let i = 0; i < this.playlists[bw].items.PlaylistItem.length; i++) {
+        if (this.playlists[bw].items.PlaylistItem[i].get('cueout') && this.playlists[bw].items.PlaylistItem[i].get('cuein')) {
+          adBreakDuration += this.playlists[bw].items.PlaylistItem[i].get('cueout');
+          this.playlists[bw].items.PlaylistItem[i].set('cueout', null);
+          this.playlists[bw].items.PlaylistItem[i].set('cuein', false);
+        } else if (this.playlists[bw].items.PlaylistItem[i].get('cueout') && !this.playlists[bw].items.PlaylistItem[i].get('cuein')) {
+          adBreakDuration = 0;
+          itemToUpdate = this.playlists[bw].items.PlaylistItem[i];
+        } else if (!this.playlists[bw].items.PlaylistItem[i].get('cueout') && this.playlists[bw].items.PlaylistItem[i].get('cuein')) {
+          const cueOut = itemToUpdate.get('cueout');
+          itemToUpdate.set('cueout', cueOut + adBreakDuration);
+        }
+      }
+    }
     return this.playlists[bw].toString().replace(/^\s*\n/gm, '');
   }
 

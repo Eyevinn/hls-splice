@@ -15,6 +15,15 @@ describe("HLSSpliceVod", () => {
     });
   });
 
+  it("can download and parse an HLS VOD with separate audio and subtitles", done => {
+    const hlsVod = new HLSSpliceVod('https://lbs-usp-hls-vod.cmore.se/vod/81ed4/a5fa1fw0uoq(12535120_ISMUSP).ism/a5fa1fw0uoq(12535120_ISMUSP).m3u8?hls_no_multiplex=false');
+    hlsVod.load()
+    .then(() => {
+      const masterManifest = hlsVod.getMasterManifest();
+      done();
+    });
+  });
+
   it("can insert ads in an HLS VOD", done => {
     const hlsVod = new HLSSpliceVod('https://maitv-vod.lab.eyevinn.technology/stswe17-ozer.mp4/master.m3u8');
     hlsVod.load()

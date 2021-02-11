@@ -2,6 +2,7 @@ const m3u8 = require('@eyevinn/m3u8');
 const request = require('request');
 const url = require('url');
 
+/*
 const findNearestBw = (bw, array) => {
   // TO BE IMPLEMENTED
   const sorted = array.sort((a, b) => b - a);
@@ -12,6 +13,14 @@ const findNearestBw = (bw, array) => {
   }
   return sorted[sorted.length - 1];
 };
+*/
+
+const findNearestBw = (bw, array) => {
+  const sorted = array.sort((a, b) => b - a);
+  return sorted.reduce((a, b) => {
+    return Math.abs(b - bw) < Math.abs(a - bw) ? b : a;
+  });
+}
 
 class HLSSpliceVod {
   /**

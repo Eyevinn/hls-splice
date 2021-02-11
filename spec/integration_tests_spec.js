@@ -20,7 +20,6 @@ describe("HLSSpliceVod", () => {
     hlsVod.load()
     .then(() => {
       const masterManifest = hlsVod.getMasterManifest();
-      console.log(masterManifest);
       done();
     });
   });

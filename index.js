@@ -159,13 +159,12 @@ class HLSSpliceVod {
 
           const bumperPlaylist = bumper.playlist[findNearestBw(bw, Object.keys(bumper.playlist))];
           const bumperLength = bumperPlaylist.items.PlaylistItem.length;
-          let i = 0;
           this.bumperDuration = 0;
           for (let j = 0; j < bumperLength; j++) {
-            this.playlists[bw].items.PlaylistItem.splice(i + j, 0, bumperPlaylist.items.PlaylistItem[j]);
+            this.playlists[bw].items.PlaylistItem.splice(j, 0, bumperPlaylist.items.PlaylistItem[j]);
             this.bumperDuration += (bumperPlaylist.items.PlaylistItem[j].get('duration') * 1000);
           }
-          this.playlists[bw].items.PlaylistItem[i + bumperLength].set('discontinuity', true);
+          this.playlists[bw].items.PlaylistItem[bumperLength].set('discontinuity', true);
           this.playlists[bw].set('targetDuration', this.targetDuration);
           this.bumperOffset = bumperLength;
         }

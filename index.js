@@ -165,7 +165,6 @@ class HLSSpliceVod {
             this.bumperDuration += (bumperPlaylist.items.PlaylistItem[j].get('duration') * 1000);
           }
           this.playlists[bw].items.PlaylistItem[bumperLength].set('discontinuity', true);
-          this.playlists[bw].set('targetDuration', this.targetDuration);
         }
         resolve();
       }).catch(reject);

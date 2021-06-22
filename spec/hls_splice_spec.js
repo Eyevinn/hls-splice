@@ -353,6 +353,20 @@ describe("HLSSpliceVod", () => {
     });
   });
 
+  it("handles target duration with video bumper and no ads", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8', { merge: true });
+    mockVod.load(mockMasterManifest1b, mockMediaManifest1b)
+    .then(() => {
+      return mockVod.insertBumper('http://mock.com/ad/mockbumper.m3u8', mockAdMasterManifest4, mockAdMediaManifest4);
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[1]).toEqual("#EXT-X-TARGETDURATION:5");
+      done();
+    });
+  });
+
   it("ensures that video bumper is always first", done => {
     const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
     mockVod.load(mockMasterManifest, mockMediaManifest)

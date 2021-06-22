@@ -50,6 +50,16 @@ describe("HLSSpliceVod", () => {
       }
       return fs.createReadStream(`testvectors/ad3/index_${bwmap[bw]}_av.m3u8`);
     };
+    mockBumperMasterManifest = () => {
+      return fs.createReadStream('testvectors/ad1/master.m3u8')
+    };
+    mockBumperMediaManifest = (bw) => {
+      const bwmap = {
+        4497000: "0",
+        2497000: "1"
+      }
+      return fs.createReadStream(`testvectors/ad1/index_${bwmap[bw]}_av.m3u8`);
+    };
   });
 
   it("can prepend a baseurl on each segment", done => {
@@ -237,5 +247,83 @@ describe("HLSSpliceVod", () => {
       expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
       done();
     });
+  });
+
+  it("handles video bumper without any ads", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertBumper('http://mock.com/ad/mockbumper.m3u8', mockBumperMasterManifest, mockBumperMediaManifest);
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[8]).toEqual("http://mock.com/ad/ad1_0_av.ts");
+      expect(lines[17]).toEqual("#EXT-X-DISCONTINUITY");
+      expect(lines[18]).not.toEqual("#EXT-X-CUE-IN");
+      done();
+    })
+  });
+
+  it("handles video bumper with one ad", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
+    })
+    .then(() => {
+      return mockVod.insertBumper('http://mock.com/ad/mockbumper.m3u8', mockBumperMasterManifest, mockBumperMediaManifest);
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[8]).toEqual("http://mock.com/ad/ad1_0_av.ts");
+      expect(lines[17]).toEqual("#EXT-X-DISCONTINUITY");
+      expect(lines[18]).not.toEqual("#EXT-X-CUE-IN");
+      expect(lines[18]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
+      done();
+    })
+  });
+
+  it("handles video bumper and two ads in a row merged into one break", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8', { merge: true });
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
+    })
+    .then(() => {
+      // This one will go first
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest3, mockAdMediaManifest3);
+    })
+    .then(() => {
+      return mockVod.insertBumper('http://mock.com/ad/mockbumper.m3u8', mockBumperMasterManifest, mockBumperMediaManifest);
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[10+8]).toEqual("#EXT-X-CUE-OUT:DURATION=18");
+      expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
+      done();
+    });
+  });
+
+  it("ensures that video bumper is always first", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertBumper('http://mock.com/ad/mockbumper.m3u8', mockBumperMasterManifest, mockBumperMediaManifest);
+    })
+    .then(() => {
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[8]).toEqual("http://mock.com/ad/ad1_0_av.ts");
+      expect(lines[17]).toEqual("#EXT-X-DISCONTINUITY");
+      expect(lines[18]).not.toEqual("#EXT-X-CUE-IN");
+      expect(lines[18]).toEqual("#EXT-X-CUE-OUT:DURATION=15");
+      done();
+    })
   });
 });

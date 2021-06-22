@@ -34,6 +34,7 @@ class HLSSpliceVod {
     this.baseUrl = null;
     this.targetDuration = 0;
     this.mergeBreaks = false; // Merge ad breaks at the same position into one single break
+    this.bumperDuration = null;
     if (options && options.baseUrl) {
       this.baseUrl = options.baseUrl;
     }
@@ -102,6 +103,10 @@ class HLSSpliceVod {
             duration += (plItem.get('duration') * 1000);
           });
           offset = duration;
+        } else {
+          if (this.bumperDuration) {
+            offset = this.bumperDuration + offset;
+          }
         }
 
         for (let b = 0; b < bandwidths.length; b++) {
@@ -140,6 +145,29 @@ class HLSSpliceVod {
         }
         //console.log(this.playlists[bandwidths[0]].toString());
         resolve();  
+      }).catch(reject);
+    });
+  }
+
+  insertBumper(bumperMasterManifestUri, _injectBumperMasterManifest, _injectBumperMediaManifest) {
+    return new Promise((resolve, reject) => {
+      this._parseAdMasterManifest(bumperMasterManifestUri, _injectBumperMasterManifest, _injectBumperMediaManifest)
+      .then(bumper => {
+        const bandwidths = Object.keys(this.playlists);
+        for (let b = 0; b < bandwidths.length; b++) {
+          const bw = bandwidths[b];
+
+          const bumperPlaylist = bumper.playlist[findNearestBw(bw, Object.keys(bumper.playlist))];
+          const bumperLength = bumperPlaylist.items.PlaylistItem.length;
+          this.bumperDuration = 0;
+          for (let j = 0; j < bumperLength; j++) {
+            this.playlists[bw].items.PlaylistItem.splice(j, 0, bumperPlaylist.items.PlaylistItem[j]);
+            this.bumperDuration += (bumperPlaylist.items.PlaylistItem[j].get('duration') * 1000);
+          }
+          this.playlists[bw].items.PlaylistItem[bumperLength].set('discontinuity', true);
+          this.playlists[bw].set('targetDuration', this.targetDuration);
+        }
+        resolve();
       }).catch(reject);
     });
   }

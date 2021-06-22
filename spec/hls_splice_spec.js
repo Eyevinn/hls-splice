@@ -20,6 +20,16 @@ describe("HLSSpliceVod", () => {
       }
       return fs.createReadStream(`testvectors/hls1/index_${bwmap[bw]}_av.m3u8`);
     };
+    mockMasterManifest1b = () => {
+      return fs.createReadStream('testvectors/hls1b/master.m3u8')
+    };
+    mockMediaManifest1b = (bw) => {
+      const bwmap = {
+        4497000: "0",
+        2497000: "1"
+      }
+      return fs.createReadStream(`testvectors/hls1b/index_${bwmap[bw]}_av.m3u8`);
+    };
     mockAdMasterManifest = () => {
       return fs.createReadStream('testvectors/ad1/master.m3u8')
     };
@@ -49,6 +59,16 @@ describe("HLSSpliceVod", () => {
         2597000: "1"
       }
       return fs.createReadStream(`testvectors/ad3/index_${bwmap[bw]}_av.m3u8`);
+    };
+    mockAdMasterManifest4 = () => {
+      return fs.createReadStream('testvectors/ad4/master.m3u8')
+    };
+    mockAdMediaManifest4 = (bw) => {
+      const bwmap = {
+        4397000: "0",
+        2597000: "1"
+      }
+      return fs.createReadStream(`testvectors/ad4/index_${bwmap[bw]}_av.m3u8`);
     };
     mockBumperMasterManifest = () => {
       return fs.createReadStream('testvectors/ad1/master.m3u8')
@@ -302,6 +322,32 @@ describe("HLSSpliceVod", () => {
       const m3u8 = mockVod.getMediaManifest(4497000);
       const lines = m3u8.split('\n');
       expect(lines[10+8]).toEqual("#EXT-X-CUE-OUT:DURATION=18");
+      expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
+      done();
+    });
+  });
+
+  it("handles target duration for video bumper and two ads in a row merged into one break", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8', { merge: true });
+    mockVod.load(mockMasterManifest1b, mockMediaManifest1b)
+    .then(() => {
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest, mockAdMediaManifest);
+    })
+    .then(() => {
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest3, mockAdMediaManifest3);
+    })
+    .then(() => {
+      // This one will go first
+      return mockVod.insertAdAt(0, 'http://mock.com/ad/mockad.m3u8', mockAdMasterManifest4, mockAdMediaManifest4);
+    })
+    .then(() => {
+      return mockVod.insertBumper('http://mock.com/ad/mockbumper.m3u8', mockBumperMasterManifest, mockBumperMediaManifest);
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[1]).toEqual("#EXT-X-TARGETDURATION:5");
+      expect(lines[10+8]).toEqual("#EXT-X-CUE-OUT:DURATION=23");
       expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
       done();
     });

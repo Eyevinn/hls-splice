@@ -401,6 +401,20 @@ describe("HLSSpliceVod", () => {
     });
   });
 
+  it("can insert interstitial with an relative assetlist URL", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertInterstitialAt(16000, "001", "/assetlist/sdfsdfjlsdfsdf", true);
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[12]).toEqual('#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:16.000Z",X-ASSET-LIST="/assetlist/sdfsdfjlsdfsdf"');
+      done();
+    });
+  });
+
   it("can insert interstitial with an asset uri", done => {
     const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
     mockVod.load(mockMasterManifest, mockMediaManifest)

@@ -149,6 +149,36 @@ class HLSSpliceVod {
     });
   }
 
+  insertInterstitialAt(offset, id, uri, isAssetList) {
+    return new Promise((resolve, reject) => {
+      if (this.bumperDuration) {
+        offset = this.bumperDuration + offset;
+      }
+
+      const bandwidths = Object.keys(this.playlists);
+      for (let b = 0; b < bandwidths.length; b++) {
+        const bw = bandwidths[b];
+        let pos = 0;
+        let i = 0;
+        this.playlists[bw].items.PlaylistItem[0].set('date', new Date(0));
+        while(pos < offset && i < this.playlists[bw].items.PlaylistItem.length) {
+          const plItem = this.playlists[bw].items.PlaylistItem[i];
+          pos += (plItem.get('duration') * 1000);
+          i++;
+        }
+        let startDate = (new Date(0 + offset)).toISOString();
+        if (isAssetList) {
+          this.playlists[bw].items.PlaylistItem[i].set('daterange', 
+            `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}",X-ASSET-LIST="${uri}"`);
+        } else {
+          this.playlists[bw].items.PlaylistItem[i].set('daterange', 
+            `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}",X-ASSET-URI="${uri}"`);
+        }
+      }
+      resolve();
+    });
+  }
+
   insertBumper(bumperMasterManifestUri, _injectBumperMasterManifest, _injectBumperMediaManifest) {
     return new Promise((resolve, reject) => {
       this._parseAdMasterManifest(bumperMasterManifestUri, _injectBumperMasterManifest, _injectBumperMediaManifest)

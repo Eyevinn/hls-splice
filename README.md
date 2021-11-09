@@ -12,7 +12,7 @@ npm install --save @eyevinn/hls-splice
 
 The code below shows an example of how an ad (HLS VOD) is inserted 35 seconds from the start in an HLS VOD.
 
-```
+```javascript
 const hlsVod = new HLSSpliceVod('https://maitv-vod.lab.eyevinn.technology/stswe17-ozer.mp4/master.m3u8');
 hlsVod.load()
 .then(() => {
@@ -122,6 +122,28 @@ segment9_0_av.ts
 #EXTINF:6.2660,
 segment10_0_av.ts
 #EXT-X-ENDLIST
+```
+## API
+
+```javascript
+class HLSSpliceVod {
+  /**
+   * Load manifest to be manipulated
+   */
+  load(): Promise<void>
+  /**
+   * Insert ad located at `adMasterManifestUri` at position `offset` (milliseconds)
+   */
+  insertAdAt(offset: number, adMasterManifesturi: string): Promise<void>
+  /**
+   * Insert pre-roll bumper located at `bumperManifestUri` (not flagged as an ad)
+   */
+  insertBumper(bumperManifestUri: string): Promise<void>
+  /**
+   * Insert an ad opportunity according to interstitial DATERANGE schema at position `offset` (milliseconds)
+   */
+  insertInterstitialAt(offset: number, id: string, uri: string, isAssetList: boolean): Promise<void>
+}
 ```
 
 # Authors

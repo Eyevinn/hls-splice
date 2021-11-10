@@ -32,7 +32,7 @@ describe("HLSSpliceVod", () => {
     })
     .then(() => {
       const mediaManifest = hlsVod.getMediaManifest(4928000);
-      expect(mediaManifest.match(/#EXT-X-CUE-OUT:DURATION=15\s+#EXTINF:10.8800,\s+https:\/\/maitv-vod.lab.eyevinn.technology\/ads\/apotea-15s.mp4\/2000\/2000-00000.ts/)).not.toBe(null);
+      expect(mediaManifest.match(/#EXT-X-CUE-OUT:DURATION=15.*\s+#EXTINF:10.8800,\s+https:\/\/maitv-vod.lab.eyevinn.technology\/ads\/apotea-15s.mp4\/2000\/2000-00000.ts/)).not.toBe(null);
       expect(mediaManifest.match(/#EXT-X-TARGETDURATION:11/)).not.toBe(null);
       const lines = mediaManifest.split("\n");
       expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");

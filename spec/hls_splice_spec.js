@@ -428,4 +428,68 @@ describe("HLSSpliceVod", () => {
       done();
     });
   });
+
+  it("can insert interstitial with an asset uri and a resume offset", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertInterstitialAt(18000, "001", "http://mock.com/asseturi", false, {
+        resumeOffset: 10500,
+      });
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[12]).toEqual('#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.000Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET=10.5');
+      done();
+    });
+  });
+
+  it("can insert interstitial with an asset uri and a playout limit", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertInterstitialAt(18000, "001", "http://mock.com/asseturi", false, {
+        playoutLimit: 12500,
+      });
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[12]).toEqual('#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.000Z",X-ASSET-URI="http://mock.com/asseturi",X-PLAYOUT-LIMIT=12.5');
+      done();
+    });
+  });
+
+  it("can insert interstitial with an asset uri and a snap IN", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertInterstitialAt(18000, "001", "http://mock.com/asseturi", false, {
+        snap: "IN",
+      });
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[12]).toEqual('#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.000Z",X-ASSET-URI="http://mock.com/asseturi",X-SNAP="IN"');
+      done();
+    });
+  });
+
+  it("can insert interstitial with an asset uri and a snap OUT", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8');
+    mockVod.load(mockMasterManifest, mockMediaManifest)
+    .then(() => {
+      return mockVod.insertInterstitialAt(18000, "001", "http://mock.com/asseturi", false, {
+        snap: "OUT",
+      });
+    })
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const lines = m3u8.split('\n');
+      expect(lines[12]).toEqual('#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.000Z",X-ASSET-URI="http://mock.com/asseturi",X-SNAP="OUT"');
+      done();
+    });
+  });
 });

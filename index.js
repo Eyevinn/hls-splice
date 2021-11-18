@@ -184,11 +184,15 @@ class HLSSpliceVod {
         if (opts && opts.plannedDuration) {
           durationTag = `,DURATION=${opts.plannedDuration / 1000}`;
         }
+        let itemIdx = i;
+        if (opts && opts.placeAtEnd) {
+          itemIdx = this.playlists[bw].items.PlaylistItem.length - 1;
+        }
         if (isAssetList) {
-          this.playlists[bw].items.PlaylistItem[i].set('daterange', 
+          this.playlists[bw].items.PlaylistItem[itemIdx].set('daterange', 
             `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-LIST="${uri}"${extraAttrs}`);
         } else {
-          this.playlists[bw].items.PlaylistItem[i].set('daterange', 
+          this.playlists[bw].items.PlaylistItem[itemIdx].set('daterange', 
             `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-URI="${uri}"${extraAttrs}`);
         }
       }

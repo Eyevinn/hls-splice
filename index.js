@@ -157,10 +157,10 @@ class HLSSpliceVod {
 
       let extraAttrs = "";
       if (opts) {
-        if (opts.resumeOffset) {
+        if (opts.resumeOffset !== undefined) {
           extraAttrs += `,X-RESUME-OFFSET=${opts.resumeOffset / 1000}`;
         }
-        if (opts.playoutLimit) {
+        if (opts.playoutLimit !== undefined) {
           extraAttrs += `,X-PLAYOUT-LIMIT=${opts.playoutLimit / 1000}`;
         }
         if (opts.snap === "IN" || opts.snap === "OUT") {

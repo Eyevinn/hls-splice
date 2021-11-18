@@ -173,13 +173,13 @@ class HLSSpliceVod {
         const bw = bandwidths[b];
         let pos = 0;
         let i = 0;
-        this.playlists[bw].items.PlaylistItem[0].set('date', new Date(0));
+        this.playlists[bw].items.PlaylistItem[0].set('date', new Date(1));
         while(pos < offset && i < this.playlists[bw].items.PlaylistItem.length) {
           const plItem = this.playlists[bw].items.PlaylistItem[i];
           pos += (plItem.get('duration') * 1000);
           i++;
         }
-        let startDate = (new Date(0 + offset)).toISOString();
+        let startDate = (new Date(1 + offset)).toISOString();
         let durationTag = "";
         if (opts && opts.plannedDuration) {
           durationTag = `,DURATION=${opts.plannedDuration / 1000}`;

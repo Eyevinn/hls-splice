@@ -182,7 +182,7 @@ class HLSSpliceVod {
         let startDate = (new Date(0 + offset)).toISOString();
         let durationTag = "";
         if (opts && opts.plannedDuration) {
-          durationTag = `,DURATION="${opts.plannedDuration / 1000}"`;
+          durationTag = `,DURATION=${opts.plannedDuration / 1000}`;
         }
         if (isAssetList) {
           this.playlists[bw].items.PlaylistItem[i].set('daterange', 

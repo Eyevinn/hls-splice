@@ -504,7 +504,7 @@ describe("HLSSpliceVod", () => {
     .then(() => {
       const m3u8 = mockVod.getMediaManifest(4497000);
       const lines = m3u8.split('\n');
-      expect(lines[12]).toEqual('#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.000Z",DURATION="30",X-ASSET-LIST="http://mock.com/asseturi"');
+      expect(lines[12]).toEqual('#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.000Z",DURATION=30,X-ASSET-LIST="http://mock.com/asseturi"');
       done();
     });
   });

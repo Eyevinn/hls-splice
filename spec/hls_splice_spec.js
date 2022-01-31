@@ -4,6 +4,10 @@ const fs = require('fs');
 describe("HLSSpliceVod", () => {
   let mockMasterManifest;
   let mockMediaManifest;
+  let mockMasterManifest1b;
+  let mockMediaManifest1b;
+  let mockMasterManifest2;
+  let mockMediaManifest2;
   let mockAdMasterManifest;
   let mockAdMediaManifest;
   let mockAdMasterManifest2;
@@ -29,6 +33,16 @@ describe("HLSSpliceVod", () => {
         2497000: "1"
       }
       return fs.createReadStream(`testvectors/hls1b/index_${bwmap[bw]}_av.m3u8`);
+    };
+    mockMasterManifest2 = () => {
+      return fs.createReadStream('testvectors/hls3/master.m3u8')
+    };
+    mockMediaManifest2 = (bw) => {
+      const bwmap = {
+        4497000: "0",
+        2497000: "1"
+      }
+      return fs.createReadStream(`testvectors/hls3/subfolder/index_${bwmap[bw]}_av.m3u8`);
     };
     mockAdMasterManifest = () => {
       return fs.createReadStream('testvectors/ad1/master.m3u8')
@@ -93,6 +107,17 @@ describe("HLSSpliceVod", () => {
     });
   });
 
+  it("can prepend a baseurl on each segment in a subfolder", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8', { baseUrl: 'https://baseurl.com/'});
+    mockVod.load(mockMasterManifest2, mockMediaManifest2)
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const m = m3u8.match('https://baseurl.com/subfolder/segment3_0_av.ts');
+      expect(m).not.toBe(null);
+      done();
+    });
+  });
+
   it("can provide absolute urls on each segment", done => {
     const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8', { absoluteUrls: true });
     mockVod.load(mockMasterManifest, mockMediaManifest)
@@ -102,6 +127,17 @@ describe("HLSSpliceVod", () => {
       expect(m).not.toBe(null);
       done();
     });
+  });
+
+  it("can set hostname on each segment", done => {
+    const mockVod = new HLSSpliceVod('http://mock.com/mock.m3u8', { baseUrl: 'https://baseurl.com/', hostname: 'myhostname.com' });
+    mockVod.load(mockMasterManifest2, mockMediaManifest2)
+    .then(() => {
+      const m3u8 = mockVod.getMediaManifest(4497000);
+      const m = m3u8.match('https://myhostname.com/subfolder/segment3_0_av.ts');
+      expect(m).not.toBe(null);
+      done();
+    });    
   });
 
 

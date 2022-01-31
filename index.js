@@ -45,6 +45,11 @@ class HLSSpliceVod {
       }
 
     }
+    if (options && options.hostname) {
+      if (this.baseUrl) {
+        this.baseUrl = this.baseUrl.replace(/:\/\/.*?\//, "://" + options.hostname + "/");
+      }
+    }
     if (options && options.merge) {
       this.mergeBreaks = true;
     }
@@ -254,11 +259,16 @@ class HLSSpliceVod {
         if (!this.playlists[bandwidth]) {
           this.playlists[bandwidth] = m3u;
         }
+        const m = mediaManifestUri.match(/^(http|https):\/\/(.*?)\/(.*)\/(.*?)$/);        
+        let subfolder;
+        if (m) {
+          subfolder = m[3];
+        }
         if (this.baseUrl) {
           for (let i = 0; i < this.playlists[bandwidth].items.PlaylistItem.length; i++) {
             let plItem = this.playlists[bandwidth].items.PlaylistItem[i];
             let uri = plItem.get('uri');
-            plItem.set('uri', this.baseUrl + uri);
+            plItem.set('uri', this.baseUrl + (subfolder ? subfolder + "/" : "") + uri);
           }
         }
         const targetDuration = this.playlists[bandwidth].get('targetDuration');

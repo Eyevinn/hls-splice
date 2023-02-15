@@ -251,7 +251,7 @@ class HLSSpliceVod {
                   if (!isPostRoll) {
                     playlist.items.PlaylistItem[idx + adLength].set("discontinuity", true);
                   }
-                  if (this.cmafMapUri.audio[g][l]) {
+                  if (this.cmafMapUri.audio[g] && this.cmafMapUri.audio[g][l]) {
                     playlist.items.PlaylistItem[idx + adLength].set("map-uri", this.cmafMapUri.audio[g][l]);
                   }
                 } else {

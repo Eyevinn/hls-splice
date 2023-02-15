@@ -492,7 +492,7 @@ describe("HLSSpliceVod", () => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         const lines = m3u8.split("\n");
         expect(lines[12]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET="10.5"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET=10.5'
         );
         done();
       });
@@ -511,7 +511,7 @@ describe("HLSSpliceVod", () => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         const lines = m3u8.split("\n");
         expect(lines[12]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET="0"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET=0'
         );
         done();
       });
@@ -530,7 +530,7 @@ describe("HLSSpliceVod", () => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         const lines = m3u8.split("\n");
         expect(lines[12]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-PLAYOUT-LIMIT="12.5"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-PLAYOUT-LIMIT=12.5'
         );
         done();
       });
@@ -587,7 +587,7 @@ describe("HLSSpliceVod", () => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         const lines = m3u8.split("\n");
         expect(lines[12]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",DURATION="30",X-ASSET-LIST="http://mock.com/asseturi"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",DURATION=30,X-ASSET-LIST="http://mock.com/asseturi"'
         );
         done();
       });
@@ -922,7 +922,7 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
       .load(mockMasterManifest, mockMediaManifest, mockAudioManifest)
       .then(() => {
         return mockVod.insertAdAt(
-          9,
+          9000,
           "http://mock.com/ad/mockad.m3u8",
           mockAdMasterManifest,
           mockAdMediaManifest,
@@ -1361,12 +1361,12 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
         expect(lines[12]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET="10.5"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET=10.5'
         );
         const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
         lines = m3u8Audio.split("\n");
         expect(lines[12]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET="10.5"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET=10.5'
         );
         done();
       });
@@ -1385,12 +1385,12 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
         expect(lines[12]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET="0"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET=0'
         );
         const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
         lines = m3u8Audio.split("\n");
         expect(lines[12]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET="0"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET=0'
         );
         done();
       });
@@ -1409,12 +1409,12 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
         expect(lines[12]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-PLAYOUT-LIMIT="12.5"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-PLAYOUT-LIMIT=12.5'
         );
         const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
         lines = m3u8Audio.split("\n");
         expect(lines[12]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-PLAYOUT-LIMIT="12.5"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-PLAYOUT-LIMIT=12.5'
         );
         done();
       });
@@ -1481,12 +1481,12 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
         expect(lines[12]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",DURATION="30",X-ASSET-LIST="http://mock.com/asseturi"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",DURATION=30,X-ASSET-LIST="http://mock.com/asseturi"'
         );
         const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
         lines = m3u8Audio.split("\n");
         expect(lines[12]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",DURATION="30",X-ASSET-LIST="http://mock.com/asseturi"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",DURATION=30,X-ASSET-LIST="http://mock.com/asseturi"'
         );
         done();
       });
@@ -1547,6 +1547,20 @@ describe("HLSSpliceVod with CMAF and Demuxed Audio Tracks,", () => {
     mockCmafAdAudioManifest3 = (g, l) => {
       return fs.createReadStream(`testvectors/demux_n_cmaf/ad3/index_${g}-${l}_a.m3u8`);
     };
+    // MOCK VOD #10 TEST
+    mockCmafAdMasterManifest4 = () => {
+      return fs.createReadStream("testvectors/demux_n_cmaf/ad4/master.m3u8");
+    };
+    mockCmafAdMediaManifest4 = (bw) => {
+      const bwmap = {
+        4545000: "0",
+        2525000: "1",
+      };
+      return fs.createReadStream(`testvectors/demux_n_cmaf/ad4/index_${bwmap[bw]}_v.m3u8`);
+    };
+    mockCmafAdAudioManifest4 = (g, l) => {
+      return fs.createReadStream(`testvectors/demux_n_cmaf/ad4/index_${g}-${l}_a.m3u8`);
+    };
   });
 
   it("contains a 15 second splice at 9 seconds from start", (done) => {
@@ -1604,7 +1618,7 @@ test-audio=256000-4.m4s
 test-audio=256000-5.m4s
 #EXT-X-MAP:URI="mock-ad-audio=256000.m4s"
 #EXT-X-DISCONTINUITY
-#EXT-X-CUE-OUT:DURATION=14.16
+#EXT-X-CUE-OUT:DURATION=14.9333
 #EXTINF:1.9200, no desc
 http://mock.com/ad/mock-ad-audio=256000-1.m4s
 #EXTINF:1.9200, no desc
@@ -1620,7 +1634,7 @@ http://mock.com/ad/mock-ad-audio=256000-6.m4s
 #EXTINF:1.9200, no desc
 http://mock.com/ad/mock-ad-audio=256000-7.m4s
 #EXTINF:1.4933, no desc
-http://mock.com/ad/mock-ad-audio=256000-92.m4s
+http://mock.com/ad/mock-ad-audio=256000-8.m4s
 #EXT-X-MAP:URI="http://mock.com/test-audio=256000.m4s"
 #EXT-X-DISCONTINUITY
 #EXT-X-CUE-IN
@@ -1778,6 +1792,62 @@ test-audio=256000-6.m4s`;
         const linesAudio = m3u8Audio.split("\n");
         expect(linesAudio[linesAudio.length - 3]).toEqual("#EXT-X-CUE-IN");
         expect(linesAudio[linesAudio.length - 2]).toEqual("#EXT-X-ENDLIST");
+        done();
+      });
+  });
+
+  it("handles target duration for video bumper and two ads in a row merged into one break", (done) => {
+    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8", { merge: true });
+    mockVod
+      .load(mockCmafMasterManifest, mockCmafMediaManifest, mockCmafAudioManifest)
+      .then(() => {
+        return mockVod.insertAdAt(
+          0,
+          "http://mock.com/ad/mockad.m3u8",
+          mockCmafAdMasterManifest,
+          mockCmafAdMediaManifest,
+          mockCmafAdAudioManifest
+        );
+      })
+      .then(() => {
+        return mockVod.insertAdAt(
+          0,
+          "http://mock.com/ad/mockad.m3u8",
+          mockCmafAdMasterManifest3,
+          mockCmafAdMediaManifest3,
+          mockCmafAdAudioManifest3
+        );
+      })
+      .then(() => {
+        // This one will go first
+        return mockVod.insertAdAt(
+          0,
+          "http://mock.com/ad/mockad.m3u8",
+          mockCmafAdMasterManifest4,
+          mockCmafAdMediaManifest4,
+          mockCmafAdAudioManifest4
+        );
+      })
+      .then(() => {
+        return mockVod.insertBumper(
+          "http://mock.com/ad/mockbumper.m3u8",
+          mockCmafAdMasterManifest,
+          mockCmafAdMediaManifest,
+          mockCmafAdAudioManifest
+        );
+      })
+      .then(() => {
+        const m3u8 = mockVod.getMediaManifest(4497000);
+        let lines = m3u8.split("\n");
+        expect(lines[6]).toEqual("#EXT-X-TARGETDURATION:5");
+        expect(lines[21]).toEqual("#EXT-X-CUE-OUT:DURATION=22.16");
+        expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
+        const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
+        lines = m3u8Audio.split("\n");
+        lines.map((l, i) => console.log(l, i));
+        expect(lines[6]).toEqual("#EXT-X-TARGETDURATION:4");
+        expect(lines[27]).toEqual("#EXT-X-CUE-OUT:DURATION=23.7599");
+        expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
         done();
       });
   });

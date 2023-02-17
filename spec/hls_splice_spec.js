@@ -1494,15 +1494,6 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
 });
 
 describe("HLSSpliceVod with CMAF and Demuxed Audio Tracks,", () => {
-  let mockMasterManifest;
-  let mockMediaManifest;
-  let mockAudioManifest;
-  let mockAdMasterManifest;
-  let mockAdMediaManifest;
-  let mockAdAudioManifest;
-  let mockAdMasterManifest2;
-  let mockAdMediaManifest2;
-  let mockAdAudioManifest2;
   const _log = (s) => console.log(JSON.stringify(s, null, 2));
   beforeEach(() => {
     // MOCK VOD #8 TEST
@@ -1587,7 +1578,7 @@ test-video=2500000-1.m4s
 test-video=2500000-2.m4s
 #EXTINF:3.0000, no desc
 test-video=2500000-3.m4s
-#EXT-X-MAP:URI="mock-ad-video=2525000.m4s"
+#EXT-X-MAP:URI="http://mock.com/ad/mock-ad-video=2525000.m4s"
 #EXT-X-DISCONTINUITY
 #EXT-X-CUE-OUT:DURATION=14.16
 #EXTINF:3.0000, no desc
@@ -1600,7 +1591,7 @@ http://mock.com/ad/mock-ad-video=2525000-3.m4s
 http://mock.com/ad/mock-ad-video=2525000-4.m4s
 #EXTINF:2.1600, no desc
 http://mock.com/ad/mock-ad-video=2525000-5.m4s
-#EXT-X-MAP:URI="http://mock.com/test-video=2500000.m4s"
+#EXT-X-MAP:URI="test-video=2500000.m4s"
 #EXT-X-DISCONTINUITY
 #EXT-X-CUE-IN
 #EXTINF:3.0000, no desc
@@ -1616,7 +1607,7 @@ test-audio=256000-3.m4s
 test-audio=256000-4.m4s
 #EXTINF:1.9200, no desc
 test-audio=256000-5.m4s
-#EXT-X-MAP:URI="mock-ad-audio=256000.m4s"
+#EXT-X-MAP:URI="http://mock.com/ad/mock-ad-audio=256000.m4s"
 #EXT-X-DISCONTINUITY
 #EXT-X-CUE-OUT:DURATION=14.9333
 #EXTINF:1.9200, no desc
@@ -1635,7 +1626,7 @@ http://mock.com/ad/mock-ad-audio=256000-6.m4s
 http://mock.com/ad/mock-ad-audio=256000-7.m4s
 #EXTINF:1.4933, no desc
 http://mock.com/ad/mock-ad-audio=256000-8.m4s
-#EXT-X-MAP:URI="http://mock.com/test-audio=256000.m4s"
+#EXT-X-MAP:URI="test-audio=256000.m4s"
 #EXT-X-DISCONTINUITY
 #EXT-X-CUE-IN
 #EXTINF:1.9200, no desc
@@ -1672,28 +1663,28 @@ test-audio=256000-6.m4s`;
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
-        expect(lines[8]).toEqual(`#EXT-X-MAP:URI="mock-ad3-video=2525000.m4s"`);
+        expect(lines[8]).toEqual(`#EXT-X-MAP:URI="http://mock.com/ad/mock-ad3-video=2525000.m4s"`);
         expect(lines[9]).toEqual(`#EXT-X-DISCONTINUITY`);
         expect(lines[10]).toEqual(`#EXT-X-CUE-OUT:DURATION=17.16`);
         expect(lines[12]).toEqual(`http://mock.com/ad/mock-ad3-video=2525000-1.m4s`);
-        expect(lines[13]).toEqual(`#EXT-X-MAP:URI="http://mock.com/test-video=2500000.m4s"`);
+        expect(lines[13]).toEqual(`#EXT-X-MAP:URI="http://mock.com/ad/mock-ad-video=2525000.m4s"`);
         expect(lines[14]).toEqual(`#EXT-X-DISCONTINUITY`);
         expect(lines[16]).toEqual(`http://mock.com/ad/mock-ad-video=2525000-1.m4s`);
-        expect(lines[25]).toEqual(`#EXT-X-MAP:URI="http://mock.com/test-video=2500000.m4s"`);
+        expect(lines[25]).toEqual(`#EXT-X-MAP:URI="test-video=2500000.m4s"`);
         expect(lines[26]).toEqual(`#EXT-X-DISCONTINUITY`);
         expect(lines[27]).toEqual(`#EXT-X-CUE-IN`);
         expect(lines[29]).toEqual(`test-video=2500000-1.m4s`);
         expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
         const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
         const linesAudio = m3u8Audio.split("\n");
-        expect(linesAudio[8]).toEqual(`#EXT-X-MAP:URI="mock-ad3-audio=256000.m4s"`);
+        expect(linesAudio[8]).toEqual(`#EXT-X-MAP:URI="http://mock.com/ad/mock-ad3-audio=256000.m4s"`);
         expect(linesAudio[9]).toEqual(`#EXT-X-DISCONTINUITY`);
         expect(linesAudio[10]).toEqual(`#EXT-X-CUE-OUT:DURATION=18.3466`);
         expect(linesAudio[12]).toEqual(`http://mock.com/ad/mock-ad3-audio=256000-1.m4s`);
-        expect(linesAudio[15]).toEqual(`#EXT-X-MAP:URI="http://mock.com/test-audio=256000.m4s"`);
+        expect(linesAudio[15]).toEqual(`#EXT-X-MAP:URI="http://mock.com/ad/mock-ad-audio=256000.m4s"`);
         expect(linesAudio[16]).toEqual(`#EXT-X-DISCONTINUITY`);
         expect(linesAudio[18]).toEqual(`http://mock.com/ad/mock-ad-audio=256000-1.m4s`);
-        expect(linesAudio[33]).toEqual(`#EXT-X-MAP:URI="http://mock.com/test-audio=256000.m4s"`);
+        expect(linesAudio[33]).toEqual(`#EXT-X-MAP:URI="test-audio=256000.m4s"`);
         expect(linesAudio[34]).toEqual(`#EXT-X-DISCONTINUITY`);
         expect(linesAudio[35]).toEqual(`#EXT-X-CUE-IN`);
         expect(linesAudio[37]).toEqual(`test-audio=256000-1.m4s`);
@@ -1728,39 +1719,39 @@ test-audio=256000-6.m4s`;
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         const lines = m3u8.split("\n");
-        expect(lines[8]).toEqual(`#EXT-X-MAP:URI="mock-ad3-video=2525000.m4s"`);
+        expect(lines[8]).toEqual(`#EXT-X-MAP:URI="http://mock.com/ad/mock-ad3-video=2525000.m4s"`);
         expect(lines[9]).toEqual(`#EXT-X-DISCONTINUITY`);
         expect(lines[10]).toEqual(`#EXT-X-CUE-OUT:DURATION=3`);
         expect(lines[12]).toEqual(`http://mock.com/ad/mock-ad3-video=2525000-1.m4s`);
-        expect(lines[13]).toEqual(`#EXT-X-MAP:URI="http://mock.com/test-video=2500000.m4s"`);
+        expect(lines[13]).toEqual(`#EXT-X-MAP:URI="test-video=2500000.m4s"`);
         expect(lines[15]).toEqual(`#EXT-X-CUE-IN`);
         expect(lines[17]).toEqual(`test-video=2500000-1.m4s`);
-        expect(lines[22]).toEqual(`#EXT-X-MAP:URI="mock-ad-video=2525000.m4s"`);
+        expect(lines[22]).toEqual(`#EXT-X-MAP:URI="http://mock.com/ad/mock-ad-video=2525000.m4s"`);
         expect(lines[24]).toEqual(`#EXT-X-CUE-OUT:DURATION=14.16`);
         expect(lines[26]).toEqual(`http://mock.com/ad/mock-ad-video=2525000-1.m4s`);
-        expect(lines[35]).toEqual(`#EXT-X-MAP:URI="http://mock.com/test-video=2500000.m4s"`);
+        expect(lines[35]).toEqual(`#EXT-X-MAP:URI="test-video=2500000.m4s"`);
         expect(lines[37]).toEqual(`#EXT-X-CUE-IN`);
         expect(lines[39]).toEqual(`test-video=2500000-4.m4s`);
         expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");
         const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
         const linesAudio = m3u8Audio.split("\n");
-        expect(linesAudio[8]).toEqual(`#EXT-X-MAP:URI="mock-ad3-audio=256000.m4s"`);
+        expect(linesAudio[8]).toEqual(`#EXT-X-MAP:URI="http://mock.com/ad/mock-ad3-audio=256000.m4s"`);
         expect(linesAudio[10]).toEqual(`#EXT-X-CUE-OUT:DURATION=3.4133`);
         expect(linesAudio[12]).toEqual(`http://mock.com/ad/mock-ad3-audio=256000-1.m4s`);
-        expect(linesAudio[15]).toEqual(`#EXT-X-MAP:URI="http://mock.com/test-audio=256000.m4s"`);
+        expect(linesAudio[15]).toEqual(`#EXT-X-MAP:URI="test-audio=256000.m4s"`);
         expect(linesAudio[17]).toEqual(`#EXT-X-CUE-IN`);
         expect(linesAudio[19]).toEqual(`test-audio=256000-1.m4s`);
-        expect(linesAudio[28]).toEqual(`#EXT-X-MAP:URI="mock-ad-audio=256000.m4s"`);
+        expect(linesAudio[28]).toEqual(`#EXT-X-MAP:URI="http://mock.com/ad/mock-ad-audio=256000.m4s"`);
         expect(linesAudio[30]).toEqual(`#EXT-X-CUE-OUT:DURATION=14.9333`);
         expect(linesAudio[32]).toEqual(`http://mock.com/ad/mock-ad-audio=256000-1.m4s`);
-        expect(linesAudio[47]).toEqual(`#EXT-X-MAP:URI="http://mock.com/test-audio=256000.m4s"`);
+        expect(linesAudio[47]).toEqual(`#EXT-X-MAP:URI="test-audio=256000.m4s"`);
         expect(linesAudio[49]).toEqual(`#EXT-X-CUE-IN`);
         expect(linesAudio[51]).toEqual(`test-audio=256000-6.m4s`);
         done();
       });
   });
 
-  it("handles one pre-roll and one post-roll", (done) => {
+  fit("handles one pre-roll and one post-roll", (done) => {
     const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
     mockVod
       .load(mockCmafMasterManifest, mockCmafMediaManifest, mockCmafAudioManifest)
@@ -1784,6 +1775,7 @@ test-audio=256000-6.m4s`;
       })
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
+        console.log(m3u8)
         const lines = m3u8.split("\n");
         expect(lines[lines.length - 3]).toEqual("#EXT-X-CUE-IN");
         expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");

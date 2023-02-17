@@ -1,7 +1,7 @@
 const m3u8 = require("@eyevinn/m3u8");
 const request = require("request");
 const url = require("url");
-const _log = (s, i = 0) => console.log(JSON.stringify(s, null, 2), 2002 + i);
+//const _log = (s, i = 0) => console.log(JSON.stringify(s, null, 2), 2002 + i);
 /*
 const findNearestBw = (bw, array) => {
   // TO BE IMPLEMENTED
@@ -121,7 +121,7 @@ class HLSSpliceVod {
             this._loadAudioManifest(
               audioManifestUrl,
               audioItem.get("group-id"),
-              audioItem.get("language"),
+              audioItem.get("language") ? audioItem.get("language") : audioItem.get("name"),
               _injectAudioManifest
             )
           );
@@ -153,6 +153,7 @@ class HLSSpliceVod {
           const startOffset = offset;
           const isPostRoll = offset == -1;
           const bandwidths = Object.keys(this.playlists);
+          let closestCmafMapUri = "";
 
           if (isPostRoll) {
             let duration = 0;
@@ -168,12 +169,16 @@ class HLSSpliceVod {
 
           for (let b = 0; b < bandwidths.length; b++) {
             const bw = bandwidths[b];
-
             const adPlaylist = ad.playlist[findNearestBw(bw, Object.keys(ad.playlist))];
             let pos = 0;
             let i = 0;
+            closestCmafMapUri = this._getCmafMapUri(this.playlists[bw], this.masterManifestUri, 1);
+            
             while (pos < offset && i < this.playlists[bw].items.PlaylistItem.length) {
               const plItem = this.playlists[bw].items.PlaylistItem[i];
+              if (plItem.attributes.attributes["map-uri"]) {
+                closestCmafMapUri = this._getCmafMapUri(this.playlists[bw], this.masterManifestUri, 1, i);
+              }
               pos += plItem.get("duration") * 1000;
               i++;
             }
@@ -182,9 +187,10 @@ class HLSSpliceVod {
               insertCueIn = true;
             }
             const adLength = adPlaylist.items.PlaylistItem.length;
-            for (let j = 0; j < adLength; j++) {
-              this.playlists[bw].items.PlaylistItem.splice(i + j, 0, adPlaylist.items.PlaylistItem[j]);
-            }
+            if (this.playlists[bw].items.PlaylistItem[0])
+              for (let j = 0; j < adLength; j++) {
+                this.playlists[bw].items.PlaylistItem.splice(i + j, 0, adPlaylist.items.PlaylistItem[j]);
+              }
             this.playlists[bw].items.PlaylistItem[i].set("discontinuity", true);
             this.playlists[bw].items.PlaylistItem[i].set("cueout", ad.duration);
             if (insertCueIn) {
@@ -195,8 +201,8 @@ class HLSSpliceVod {
               if (!isPostRoll) {
                 this.playlists[bw].items.PlaylistItem[i + adLength].set("discontinuity", true);
               }
-              if (this.cmafMapUri.video[bw]) {
-                this.playlists[bw].items.PlaylistItem[i + adLength].set("map-uri", this.cmafMapUri.video[bw]);
+              if (closestCmafMapUri) {
+                this.playlists[bw].items.PlaylistItem[i + adLength].set("map-uri", closestCmafMapUri);
               }
             } else {
               this.playlists[bw].addPlaylistItem({ cuein: true });
@@ -227,8 +233,13 @@ class HLSSpliceVod {
                 const adPlaylist = ad.playlistAudio[nearestGroup][nearestLang];
                 let pos = 0;
                 let idx = 0;
+                closestCmafMapUri = this._getCmafMapUri(playlist, this.masterManifestUri, 1);
+
                 while (pos < offset && idx < playlist.items.PlaylistItem.length) {
                   const plItem = playlist.items.PlaylistItem[idx];
+                  if (plItem.attributes.attributes["map-uri"]) {
+                    closestCmafMapUri = this._getCmafMapUri(playlist, this.masterManifestUri, 1, i);
+                  }
                   pos += plItem.get("duration") * 1000;
                   idx++;
                 }
@@ -251,8 +262,8 @@ class HLSSpliceVod {
                   if (!isPostRoll) {
                     playlist.items.PlaylistItem[idx + adLength].set("discontinuity", true);
                   }
-                  if (this.cmafMapUri.audio[g] && this.cmafMapUri.audio[g][l]) {
-                    playlist.items.PlaylistItem[idx + adLength].set("map-uri", this.cmafMapUri.audio[g][l]);
+                  if (closestCmafMapUri) {
+                    playlist.items.PlaylistItem[idx + adLength].set("map-uri", closestCmafMapUri);
                   }
                 } else {
                   playlist.addPlaylistItem({ cuein: true });
@@ -261,8 +272,6 @@ class HLSSpliceVod {
               }
             }
           }
-
-          //console.log(this.playlists[bandwidths[0]].toString());
           resolve();
         })
         .catch(reject);
@@ -324,7 +333,6 @@ class HLSSpliceVod {
           const lang = langs[j];
           let pos = 0;
           let idx = 0;
-          // todo
           this.playlistsAudio[group][lang].items.PlaylistItem[0].set("date", new Date(1));
           while (pos < offset && idx < this.playlistsAudio[group][lang].items.PlaylistItem.length) {
             const plItem = this.playlistsAudio[group][lang].items.PlaylistItem[idx];
@@ -502,10 +510,11 @@ class HLSSpliceVod {
           this.targetDuration = targetDuration;
         }
         this.playlists[bandwidth].set("targetDuration", this.targetDuration);
-        const initSegUri = this._getCmafMapUri(m3u, mediaManifestUri);
+        const initSegUri = this._getCmafMapUri(m3u, mediaManifestUri, this.baseUrl);
         if (initSegUri) {
           if (!this.cmafMapUri.video[bandwidth]) {
-            this.cmafMapUri.video[bandwidth] = initSegUri;
+            this.cmafMapUri.video[bandwidth] =
+              this.baseUrl && !initSegUri.includes("http") ? this.baseUrl + initSegUri : initSegUri;
           }
         }
         resolve();
@@ -548,12 +557,13 @@ class HLSSpliceVod {
           this.targetDurationAudio = targetDuration;
         }
         this.playlistsAudio[group][lang].set("targetDuration", this.targetDurationAudio);
-        const initSegUri = this._getCmafMapUri(m3u, audioManifestUri);
+        const initSegUri = this._getCmafMapUri(m3u, audioManifestUri, this.baseUrl);
         if (initSegUri) {
           if (!this.cmafMapUri.audio[group]) {
             this.cmafMapUri.audio[group] = {};
           }
-          this.cmafMapUri.audio[group][lang] = initSegUri;
+          this.cmafMapUri.audio[group][lang] =
+            this.baseUrl && !initSegUri.includes("http") ? this.baseUrl + initSegUri : initSegUri;
         }
         resolve();
       });
@@ -606,6 +616,10 @@ class HLSSpliceVod {
                 if (!plUri.match("^http")) {
                   plItem.set("uri", url.resolve(baseUrl, plUri));
                 }
+                const plMapUri = plItem.attributes.attributes["map-uri"];
+                if (plMapUri && !plMapUri.match("^http")) {
+                  plItem.set("map-uri", url.resolve(baseUrl, plMapUri));
+                }
                 ad.duration += plItem.get("duration");
               }
               ad.playlist[streamItem.get("bandwidth")] = m3u;
@@ -657,6 +671,10 @@ class HLSSpliceVod {
                 const plUri = plItem.get("uri");
                 if (!plUri.match("^http")) {
                   plItem.set("uri", url.resolve(baseUrl, plUri));
+                }
+                const plMapUri = plItem.attributes.attributes["map-uri"];
+                if (plMapUri && !plMapUri.match("^http")) {
+                  plItem.set("map-uri", url.resolve(baseUrl, plMapUri));
                 }
                 ad.durationAudio += plItem.get("duration");
               }
@@ -714,11 +732,11 @@ class HLSSpliceVod {
     });
   }
 
-  _getCmafMapUri(m3u, manifestUri) {
+  _getCmafMapUri(m3u, manifestUri, useAbsUrl, index = 0) {
     let initSegment = undefined;
-    if (m3u.items.PlaylistItem[0].attributes.attributes["map-uri"]) {
-      initSegment = m3u.items.PlaylistItem[0].attributes.attributes["map-uri"];
-      if (!initSegment.match("^http")) {
+    if (m3u.items.PlaylistItem[index].attributes.attributes["map-uri"]) {
+      initSegment = m3u.items.PlaylistItem[index].attributes.attributes["map-uri"];
+      if (!initSegment.match("^http") && useAbsUrl) {
         const n = manifestUri.match("^(.*)/.*?$");
         if (n) {
           initSegment = url.resolve(n[1] + "/", initSegment);

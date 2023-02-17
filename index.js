@@ -172,12 +172,12 @@ class HLSSpliceVod {
             const adPlaylist = ad.playlist[findNearestBw(bw, Object.keys(ad.playlist))];
             let pos = 0;
             let i = 0;
-            closestCmafMapUri = this._getCmafMapUri(this.playlists[bw], this.masterManifestUri, 1);
-            
+            closestCmafMapUri = this._getCmafMapUri(this.playlists[bw], this.masterManifestUri, this.baseUrl);
+
             while (pos < offset && i < this.playlists[bw].items.PlaylistItem.length) {
               const plItem = this.playlists[bw].items.PlaylistItem[i];
               if (plItem.attributes.attributes["map-uri"]) {
-                closestCmafMapUri = this._getCmafMapUri(this.playlists[bw], this.masterManifestUri, 1, i);
+                closestCmafMapUri = this._getCmafMapUri(this.playlists[bw], this.masterManifestUri, this.baseUrl, i);
               }
               pos += plItem.get("duration") * 1000;
               i++;
@@ -233,12 +233,12 @@ class HLSSpliceVod {
                 const adPlaylist = ad.playlistAudio[nearestGroup][nearestLang];
                 let pos = 0;
                 let idx = 0;
-                closestCmafMapUri = this._getCmafMapUri(playlist, this.masterManifestUri, 1);
+                closestCmafMapUri = this._getCmafMapUri(playlist, this.masterManifestUri, this.baseUrl);
 
                 while (pos < offset && idx < playlist.items.PlaylistItem.length) {
                   const plItem = playlist.items.PlaylistItem[idx];
                   if (plItem.attributes.attributes["map-uri"]) {
-                    closestCmafMapUri = this._getCmafMapUri(playlist, this.masterManifestUri, 1, i);
+                    closestCmafMapUri = this._getCmafMapUri(playlist, this.masterManifestUri, this.baseUrl, i);
                   }
                   pos += plItem.get("duration") * 1000;
                   idx++;

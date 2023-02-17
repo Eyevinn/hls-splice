@@ -1751,7 +1751,7 @@ test-audio=256000-6.m4s`;
       });
   });
 
-  fit("handles one pre-roll and one post-roll", (done) => {
+  it("handles one pre-roll and one post-roll", (done) => {
     const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
     mockVod
       .load(mockCmafMasterManifest, mockCmafMediaManifest, mockCmafAudioManifest)
@@ -1775,7 +1775,6 @@ test-audio=256000-6.m4s`;
       })
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
-        console.log(m3u8)
         const lines = m3u8.split("\n");
         expect(lines[lines.length - 3]).toEqual("#EXT-X-CUE-IN");
         expect(lines[lines.length - 2]).toEqual("#EXT-X-ENDLIST");

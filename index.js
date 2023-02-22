@@ -210,7 +210,8 @@ class HLSSpliceVod {
             this.playlists[bw].set("targetDuration", this.targetDuration);
           }
           const groups = Object.keys(this.playlistsAudio);
-          if (groups.length > 0) {
+          const adGroups = Object.keys(ad.playlistAudio);
+          if (groups.length > 0 && adGroups.length > 0) {
             if (isPostRoll) {
               let duration = 0;
               const langs = Object.keys(this.playlistsAudio[groups[0]]);
@@ -502,7 +503,9 @@ class HLSSpliceVod {
           for (let i = 0; i < this.playlists[bandwidth].items.PlaylistItem.length; i++) {
             let plItem = this.playlists[bandwidth].items.PlaylistItem[i];
             let uri = plItem.get("uri");
-            plItem.set("uri", this.baseUrl + uri);
+            if (!uri.includes("http")) {
+              plItem.set("uri", this.baseUrl + uri);
+            } 
           }
         }
         const targetDuration = this.playlists[bandwidth].get("targetDuration");
@@ -549,7 +552,9 @@ class HLSSpliceVod {
           for (let i = 0; i < this.playlistsAudio[group][lang].items.PlaylistItem.length; i++) {
             let plItem = this.playlistsAudio[group][lang].items.PlaylistItem[i];
             let uri = plItem.get("uri");
-            plItem.set("uri", this.baseUrl + uri);
+            if (!uri.includes("http")) {
+              plItem.set("uri", this.baseUrl + uri);
+            }
           }
         }
         const targetDuration = this.playlistsAudio[group][lang].get("targetDuration");

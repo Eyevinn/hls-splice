@@ -92,6 +92,7 @@ class HLSSpliceVod {
         let audioItems = m3u.items.MediaItem.filter((item) => {
           return item.attributes.attributes.type === "AUDIO";
         });
+        let loadedGroupLangs = [];
         for (let i = 0; i < audioItems.length; i++) {
           const audioItem = audioItems[i];
           // If no uri on mediaItem then it must exist on a streamItem
@@ -115,15 +116,16 @@ class HLSSpliceVod {
           } else {
             audioItemUri = audioItem.get("uri");
           }
-
+          const audioItemGroupId = audioItem.get("group-id");
+          const audioItemLanguage = audioItem.get("language") ? audioItem.get("language") : audioItem.get("name");
+          if (loadedGroupLangs.includes(`${audioItemGroupId}-${audioItemLanguage}`)) {
+            continue;
+          } else {
+            loadedGroupLangs.push(`${audioItemGroupId}-${audioItemLanguage}`);
+          }
           const audioManifestUrl = url.resolve(baseUrl, audioItemUri);
           mediaManifestPromises.push(
-            this._loadAudioManifest(
-              audioManifestUrl,
-              audioItem.get("group-id"),
-              audioItem.get("language") ? audioItem.get("language") : audioItem.get("name"),
-              _injectAudioManifest
-            )
+            this._loadAudioManifest(audioManifestUrl, audioItemGroupId, audioItemLanguage, _injectAudioManifest)
           );
         }
         Promise.all(mediaManifestPromises).then(resolve).catch(reject);
@@ -505,7 +507,7 @@ class HLSSpliceVod {
             let uri = plItem.get("uri");
             if (!uri.includes("http")) {
               plItem.set("uri", this.baseUrl + uri);
-            } 
+            }
           }
         }
         const targetDuration = this.playlists[bandwidth].get("targetDuration");

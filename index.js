@@ -508,6 +508,11 @@ class HLSSpliceVod {
             if (!uri.includes("http")) {
               plItem.set("uri", this.baseUrl + uri);
             }
+            let map_uri = plItem.attributes.attributes["map-uri"];
+            if (map_uri && !map_uri.includes("http")) {
+              plItem.attributes.attributes["map-uri"] = 
+              this.baseUrl + map_uri;
+            }
           }
         }
         const targetDuration = this.playlists[bandwidth].get("targetDuration");
@@ -556,6 +561,11 @@ class HLSSpliceVod {
             let uri = plItem.get("uri");
             if (!uri.includes("http")) {
               plItem.set("uri", this.baseUrl + uri);
+            }
+            let map_uri = plItem.attributes.attributes["map-uri"];
+            if (map_uri && !map_uri.includes("http")) {
+              plItem.attributes.attributes["map-uri"] = 
+              this.baseUrl + map_uri;
             }
           }
         }
@@ -624,7 +634,7 @@ class HLSSpliceVod {
                   plItem.set("uri", url.resolve(baseUrl, plUri));
                 }
                 const plMapUri = plItem.attributes.attributes["map-uri"];
-                if (plMapUri && !plMapUri.match("^http")) {
+                if (plMapUri && !plMapUri.match(/^http/)) {
                   plItem.set("map-uri", url.resolve(baseUrl, plMapUri));
                 }
                 ad.duration += plItem.get("duration");
@@ -680,7 +690,7 @@ class HLSSpliceVod {
                   plItem.set("uri", url.resolve(baseUrl, plUri));
                 }
                 const plMapUri = plItem.attributes.attributes["map-uri"];
-                if (plMapUri && !plMapUri.match("^http")) {
+                if (plMapUri && !plMapUri.match(/^http/)) {
                   plItem.set("map-uri", url.resolve(baseUrl, plMapUri));
                 }
                 ad.durationAudio += plItem.get("duration");

@@ -1747,8 +1747,28 @@ test-audio=256000-6.m4s`;
       });
   });
 
+  it("handles setting absolutUrl on map uri, when no ad is stitched", (done) => {
+    const mockVod = new HLSSpliceVod("http://mock.com/test-vod/mock.m3u8", {
+      absoluteUrls: 1
+    });
+    mockVod
+      .load(mockCmafMasterManifest, mockCmafMediaManifest, mockCmafAudioManifest)
+      .then(() => {
+        const m3u8 = mockVod.getMediaManifest(4497000);
+        const lines = m3u8.split("\n");
+        expect(lines[8]).toBe(`#EXT-X-MAP:URI="http://mock.com/test-vod/test-video=2500000.m4s"`)
+        expect(lines[10]).toBe(`http://mock.com/test-vod/test-video=2500000-1.m4s`)
+        const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
+        const linesAudio = m3u8Audio.split("\n");
+        expect(linesAudio[8]).toBe(`#EXT-X-MAP:URI="http://mock.com/test-vod/test-audio=256000.m4s"`)
+        expect(linesAudio[10]).toBe(`http://mock.com/test-vod/test-audio=256000-1.m4s`)
+        expect(linesAudio[linesAudio.length - 2]).toEqual("#EXT-X-ENDLIST");
+        done();
+      });
+  });
+
   it("handles one pre-roll and one post-roll", (done) => {
-    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
+    const mockVod = new HLSSpliceVod("http://mock.com/test-vod/mock.m3u8");
     mockVod
       .load(mockCmafMasterManifest, mockCmafMediaManifest, mockCmafAudioManifest)
       .then(() => {

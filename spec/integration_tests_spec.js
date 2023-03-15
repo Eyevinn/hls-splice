@@ -39,4 +39,49 @@ describe("HLSSpliceVod", () => {
       done();
     })
   });
+
+  
+  it("can insert ads in an HLS VOD with seperate Manifest Loaders (Master + Media)", done => {
+    const hlsVod = new HLSSpliceVod('https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/.m3u8',
+    {
+      absoluteUrls: true
+    });
+    hlsVod.loadMasterManifest().then(() => {
+      hlsVod.loadMediaManifest("https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-video=300000.m3u8", 455000)
+    })
+    .then(() => {
+      return hlsVod.insertAdAt(0, 'https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/.m3u8');
+    })
+    .then(() => {
+      const mediaManifest = hlsVod.getMediaManifest(455000);
+      const lines = mediaManifest.split("\n");
+      expect(lines[8]).toEqual(`#EXT-X-MAP:URI="https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/hls/output-video=300000.m4s"`);
+      expect(lines[12]).toEqual(`https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/hls/output-video=300000-1.m4s`);
+      expect(lines[23]).toEqual(`#EXT-X-MAP:URI="https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/hls/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-video=300000.m4s"`);
+      expect(lines[28]).toEqual(`https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/hls/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-video=300000-1.m4s`);
+      done();
+    })
+  });
+
+  it("can insert ads in an HLS VOD with seperate Manifest Loaders (Master + Audio)", done => {
+    const hlsVod = new HLSSpliceVod('https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/.m3u8',
+    {
+      absoluteUrls: true
+    });
+    hlsVod.loadMasterManifest().then(() => {
+      hlsVod.loadAudioManifest("https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-audio=128000.m3u8", "audio-aacl-128", "audio")
+    })
+    .then(() => {
+      return hlsVod.insertAdAt(0, 'https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/.m3u8');
+    })
+    .then(() => {
+      const audioManifest = hlsVod.getAudioManifest("audio-aacl-128", "audio");
+      const lines = audioManifest.split("\n");
+      expect(lines[8]).toEqual(`#EXT-X-MAP:URI="https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/hls/output-audio=128000.m4s"`);
+      expect(lines[12]).toEqual(`https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/hls/output-audio=128000-1.m4s`);
+      expect(lines[23]).toEqual(`#EXT-X-MAP:URI="https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/hls/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-audio=128000.m4s"`);
+      expect(lines[28]).toEqual(`https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/hls/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-audio=128000-1.m4s`);
+      done();
+    })
+  });
 });

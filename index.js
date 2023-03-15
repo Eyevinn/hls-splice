@@ -65,6 +65,27 @@ class HLSSpliceVod {
     this.cmafMapUri = { video: {}, audio: {} };
   }
 
+  loadMasterManifest(_injectMasterManifest, _injectMediaManifest, _injectAudioManifest) {
+    return new Promise((resolve, reject) => {
+      const parser = m3u8.createStream();
+
+      parser.on("m3u", (m3u) => {
+        this.m3u = m3u;
+        return resolve();
+      });
+
+      if (!_injectMasterManifest) {
+        try {
+          request({ uri: this.masterManifestUri, gzip: true }).pipe(parser);
+        } catch (exc) {
+          reject(exc);
+        }
+      } else {
+        _injectMasterManifest().pipe(parser);
+      }
+    });
+  }
+
   /**
    *
    * @param {ReadStream} _injectMasterManifest
@@ -86,7 +107,7 @@ class HLSSpliceVod {
           const streamItem = m3u.items.StreamItem[i];
           const mediaManifestUrl = url.resolve(baseUrl, streamItem.get("uri"));
           mediaManifestPromises.push(
-            this._loadMediaManifest(mediaManifestUrl, streamItem.get("bandwidth"), _injectMediaManifest)
+            this.loadMediaManifest(mediaManifestUrl, streamItem.get("bandwidth"), _injectMediaManifest)
           );
         }
         let audioItems = m3u.items.MediaItem.filter((item) => {
@@ -125,7 +146,7 @@ class HLSSpliceVod {
           }
           const audioManifestUrl = url.resolve(baseUrl, audioItemUri);
           mediaManifestPromises.push(
-            this._loadAudioManifest(audioManifestUrl, audioItemGroupId, audioItemLanguage, _injectAudioManifest)
+            this.loadAudioManifest(audioManifestUrl, audioItemGroupId, audioItemLanguage, _injectAudioManifest)
           );
         }
         Promise.all(mediaManifestPromises).then(resolve).catch(reject);
@@ -492,7 +513,7 @@ class HLSSpliceVod {
     }
   }
 
-  _loadMediaManifest(mediaManifestUri, bandwidth, _injectMediaManifest) {
+  loadMediaManifest(mediaManifestUri, bandwidth, _injectMediaManifest) {
     return new Promise((resolve, reject) => {
       const parser = m3u8.createStream();
 
@@ -510,8 +531,7 @@ class HLSSpliceVod {
             }
             let map_uri = plItem.attributes.attributes["map-uri"];
             if (map_uri && !map_uri.includes("http")) {
-              plItem.attributes.attributes["map-uri"] = 
-              this.baseUrl + map_uri;
+              plItem.attributes.attributes["map-uri"] = this.baseUrl + map_uri;
             }
           }
         }
@@ -542,7 +562,7 @@ class HLSSpliceVod {
     });
   }
 
-  _loadAudioManifest(audioManifestUri, group, lang, _injectAudioManifest) {
+  loadAudioManifest(audioManifestUri, group, lang, _injectAudioManifest) {
     return new Promise((resolve, reject) => {
       const parser = m3u8.createStream();
 
@@ -564,8 +584,7 @@ class HLSSpliceVod {
             }
             let map_uri = plItem.attributes.attributes["map-uri"];
             if (map_uri && !map_uri.includes("http")) {
-              plItem.attributes.attributes["map-uri"] = 
-              this.baseUrl + map_uri;
+              plItem.attributes.attributes["map-uri"] = this.baseUrl + map_uri;
             }
           }
         }

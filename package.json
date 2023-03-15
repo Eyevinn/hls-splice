@@ -5,7 +5,7 @@
   "repository": "https://github.com/Eyevinn/hls-splice",
   "main": "index.js",
   "scripts": {
-    "test": "$(npm bin)/jasmine",
+    "test": "jasmine",
     "postversion": "git push && git push --tags",
     "coverage": "nyc npm test && nyc report",
     "coveralls": "nyc npm test && nyc report --reporter=text-lcov | coveralls"
@@ -26,7 +26,7 @@
     "nyc": "^15.0.1"
   },
   "dependencies": {
-    "@eyevinn/m3u8": "^0.5.3",
+    "@eyevinn/m3u8": "^0.5.6",
     "request": "^2.88.2"
   }
 }

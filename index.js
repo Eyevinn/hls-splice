@@ -14,6 +14,9 @@ const findNearestBw = (bw, array) => {
   return sorted[sorted.length - 1];
 };
 */
+
+const NOT_MULTIVARIANT_ERROR_MSG = "Error: Source is Not a Multivariant Manifest";
+
 const findNearestGroupAndLang = (_group, _language, _playlist) => {
   const groups = Object.keys(_playlist);
   let group = groups[0]; // default
@@ -103,6 +106,11 @@ class HLSSpliceVod {
         if (m) {
           baseUrl = m[1] + "/";
         }
+
+        if(m3u.items.StreamItem.length === 0 && m3u.items.PlaylistItem.length > 0) {
+          return reject(NOT_MULTIVARIANT_ERROR_MSG);
+        }
+
         for (let i = 0; i < m3u.items.StreamItem.length; i++) {
           const streamItem = m3u.items.StreamItem[i];
           const mediaManifestUrl = url.resolve(baseUrl, streamItem.get("uri"));
@@ -124,7 +132,7 @@ class HLSSpliceVod {
               if (streamItem.get("resolution") === undefined) {
                 return true;
               }
-              let streamGroupId = streamItem.attributes.attributes["audio"];
+              let streamGroupId = streamItem.get("audio");
               if (streamGroupId === aItemGroup) {
                 return false;
               } else {
@@ -199,7 +207,7 @@ class HLSSpliceVod {
 
             while (pos < offset && i < this.playlists[bw].items.PlaylistItem.length) {
               const plItem = this.playlists[bw].items.PlaylistItem[i];
-              if (plItem.attributes.attributes["map-uri"]) {
+              if (plItem.get("map-uri")) {
                 closestCmafMapUri = this._getCmafMapUri(this.playlists[bw], this.masterManifestUri, this.baseUrl, i);
               }
               pos += plItem.get("duration") * 1000;
@@ -652,7 +660,7 @@ class HLSSpliceVod {
                 if (!plUri.match("^http")) {
                   plItem.set("uri", url.resolve(baseUrl, plUri));
                 }
-                const plMapUri = plItem.attributes.attributes["map-uri"];
+                const plMapUri = plItem.get("map-uri");
                 if (plMapUri && !plMapUri.match(/^http/)) {
                   plItem.set("map-uri", url.resolve(baseUrl, plMapUri));
                 }
@@ -708,7 +716,7 @@ class HLSSpliceVod {
                 if (!plUri.match("^http")) {
                   plItem.set("uri", url.resolve(baseUrl, plUri));
                 }
-                const plMapUri = plItem.attributes.attributes["map-uri"];
+                const plMapUri = plItem.get("map-uri");
                 if (plMapUri && !plMapUri.match(/^http/)) {
                   plItem.set("map-uri", url.resolve(baseUrl, plMapUri));
                 }
@@ -770,8 +778,8 @@ class HLSSpliceVod {
 
   _getCmafMapUri(m3u, manifestUri, useAbsUrl, index = 0) {
     let initSegment = undefined;
-    if (m3u.items.PlaylistItem[index].attributes.attributes["map-uri"]) {
-      initSegment = m3u.items.PlaylistItem[index].attributes.attributes["map-uri"];
+    if (m3u.items.PlaylistItem[index].get("map-uri")) {
+      initSegment = m3u.items.PlaylistItem[index].get("map-uri");
       if (!initSegment.match("^http") && useAbsUrl) {
         const n = manifestUri.match("^(.*)/.*?$");
         if (n) {

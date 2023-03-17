@@ -12,7 +12,7 @@ npm install --save @eyevinn/hls-splice
 
 The code below shows an example of how an ad (HLS VOD) is inserted 35 seconds from the start in an HLS VOD.
 
-```javascript
+```js
 const hlsVod = new HLSSpliceVod('https://maitv-vod.lab.eyevinn.technology/stswe17-ozer.mp4/master.m3u8');
 hlsVod.load()
 .then(() => {

@@ -75,7 +75,7 @@ class HLSSpliceVod {
       this.mergeBreaks = true;
     }
     if (options && options.log) {
-      this.log = true;
+      this.log = options.log;
     }
     this.cmafMapUri = { video: {}, audio: {} };
   }

@@ -54,6 +54,12 @@ class HLSSpliceVod {
     this.targetDurationAudio = 0;
     this.mergeBreaks = false; // Merge ad breaks at the same position into one single break
     this.bumperDuration = null;
+    this.log = null;
+    this.logger = (str) => {
+      if (this.log) {
+        console.log(str);
+      }
+    };
     this.ad = {};
     this.bumper = {};
     if (options && options.baseUrl) {
@@ -67,6 +73,9 @@ class HLSSpliceVod {
     }
     if (options && options.merge) {
       this.mergeBreaks = true;
+    }
+    if (options && options.log) {
+      this.log = true;
     }
     this.cmafMapUri = { video: {}, audio: {} };
   }
@@ -205,7 +214,8 @@ class HLSSpliceVod {
           }
           for (let b = 0; b < bandwidths.length; b++) {
             const bw = bandwidths[b];
-            const adPlaylist = ad.playlist[findNearestBw(bw, Object.keys(ad.playlist))];
+            const targetAdBw = findNearestBw(bw, Object.keys(ad.playlist));
+            const adPlaylist = ad.playlist[targetAdBw];
             let pos = 0;
             let i = 0;
             closestCmafMapUri = this._getCmafMapUri(this.playlists[bw], this.masterManifestUri, this.baseUrl);
@@ -582,7 +592,6 @@ class HLSSpliceVod {
   loadAudioManifest(audioManifestUri, group, lang, _injectAudioManifest) {
     return new Promise((resolve, reject) => {
       const parser = m3u8.createStream();
-
       parser.on("m3u", (m3u) => {
         this.duration = 0;
         if (!this.playlistsAudio[group]) {
@@ -641,6 +650,7 @@ class HLSSpliceVod {
       parser.on("m3u", (m3u) => {
         let mediaManifestPromises = [];
         ad.master = m3u;
+        ad.bandwidths = [];
         ad.playlist = {};
         ad.playlistAudio = {};
         ad.baseUrl = null;
@@ -648,13 +658,14 @@ class HLSSpliceVod {
         if (m) {
           ad.baseUrl = m[1] + "/";
         }
+        const adBandwidths = m3u.items.StreamItem.map((streamItem) => {
+          if (streamItem.get("bandwidth")) {
+            return streamItem.get("bandwidth");
+          }
+          return null;
+        });
+        ad.bandwidths = adBandwidths;
         for (let _bw of Object.keys(this.playlists)) {
-          const adBandwidths = m3u.items.StreamItem.map((streamItem) => {
-            if (streamItem.get("bandwidth")) {
-              return streamItem.get("bandwidth");
-            }
-            return null;
-          });
           const targetBw = findNearestBw(_bw, adBandwidths);
           const targetStreamItem = m3u.items.StreamItem.find((streamItem) => streamItem.get("bandwidth") === targetBw);
           const mediaManifestUrl = url.resolve(ad.baseUrl, targetStreamItem.get("uri"));
@@ -692,6 +703,7 @@ class HLSSpliceVod {
 
             if (!_injectAdMediaManifest) {
               try {
+                this.logger(`GET: "${mediaManifestUrl}"`);
                 request({ uri: mediaManifestUrl, gzip: true })
                   .on("error", (err) => {
                     rej(err);
@@ -754,6 +766,7 @@ class HLSSpliceVod {
             });
             if (!_injectAdAudioManifest) {
               try {
+                this.logger(`GET: "${audioManifestUrl}"`);
                 request({ uri: audioManifestUrl, gzip: true })
                   .on("error", (err) => {
                     rej(err);

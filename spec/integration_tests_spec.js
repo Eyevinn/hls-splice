@@ -18,7 +18,7 @@ describe("HLSSpliceVod", () => {
     });
   });
 
-  it("can download and parse an HLS VOD with separate audio and subtitles", (done) => {
+  xit("can download and parse an HLS VOD with separate audio and subtitles", (done) => {
     const hlsVod = new HLSSpliceVod(
       "https://lbs-usp-hls-vod.cmore.se/vod/81ed4/a5fa1fw0uoq(12535120_ISMUSP).ism/a5fa1fw0uoq(12535120_ISMUSP).m3u8?hls_no_multiplex=false"
     );

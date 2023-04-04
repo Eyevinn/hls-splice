@@ -493,7 +493,7 @@ class HLSSpliceVod {
             this.playlists[bw].items.PlaylistItem[i].get("cuein")
           ) {
             const cueOut = itemToUpdate.get("cueout");
-            itemToUpdate.set("cueout", cueOut + adBreakDuration);
+            itemToUpdate.set("cueout", Math.round(cueOut + adBreakDuration));
           }
         }
       }
@@ -529,7 +529,7 @@ class HLSSpliceVod {
             this.playlistsAudio[g][l].items.PlaylistItem[i].get("cuein")
           ) {
             const cueOut = itemToUpdate.get("cueout");
-            itemToUpdate.set("cueout", cueOut + adBreakDuration);
+            itemToUpdate.set("cueout", Math.round(cueOut + adBreakDuration));
           }
         }
       }

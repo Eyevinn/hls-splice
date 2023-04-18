@@ -285,7 +285,7 @@ class HLSSpliceVod {
                 while (pos < offset && idx < playlist.items.PlaylistItem.length) {
                   const plItem = playlist.items.PlaylistItem[idx];
                   if (plItem.get("map-uri")) {
-                    closestCmafMapUri = this._getCmafMapUri(playlist, this.masterManifestUri, this.baseUrl, i);
+                    closestCmafMapUri = this._getCmafMapUri(playlist, this.masterManifestUri, this.baseUrl, idx);
                   }
                   pos += plItem.get("duration") * 1000;
                   idx++;
@@ -309,7 +309,7 @@ class HLSSpliceVod {
                   if (!isPostRoll) {
                     playlist.items.PlaylistItem[idx + adLength].set("discontinuity", true);
                   }
-                  if (closestCmafMapUri) {
+                  if (closestCmafMapUri && !playlist.items.PlaylistItem[idx + adLength].get("cueout")) {
                     playlist.items.PlaylistItem[idx + adLength].set("map-uri", closestCmafMapUri);
                   }
                 } else {

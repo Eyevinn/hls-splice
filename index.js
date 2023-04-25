@@ -55,6 +55,7 @@ class HLSSpliceVod {
     this.mergeBreaks = false; // Merge ad breaks at the same position into one single break
     this.bumperDuration = null;
     this.log = null;
+    this.clearCueTagsInSource = null;
     this.logger = (str) => {
       if (this.log) {
         console.log(str);
@@ -77,7 +78,11 @@ class HLSSpliceVod {
     if (options && options.log) {
       this.log = options.log;
     }
+    if (options && options.clearCueTagsInSource) {
+      this.clearCueTagsInSource = options.clearCueTagsInSource;
+    }
     this.cmafMapUri = { video: {}, audio: {} };
+
   }
 
   loadMasterManifest(_injectMasterManifest, _injectMediaManifest, _injectAudioManifest) {
@@ -562,6 +567,20 @@ class HLSSpliceVod {
             }
           }
         }
+        if (this.clearCueTagsInSource) {
+          for (let i = 0; i < this.playlists[bandwidth].items.PlaylistItem.length; i++) {
+            const plItem = this.playlists[bandwidth].items.PlaylistItem[i];
+              if (plItem.get("cuein")) {
+                plItem.set("cuein", false);
+              }
+              if (plItem.get("cueout")) {
+                plItem.set("cueout", null);
+              }
+              if (plItem.get("daterange")) {
+                plItem.attributes.attributes.daterange = null;
+              }
+          }
+        }
         const targetDuration = this.playlists[bandwidth].get("targetDuration");
         if (targetDuration > this.targetDuration) {
           this.targetDuration = targetDuration;
@@ -611,6 +630,31 @@ class HLSSpliceVod {
             let map_uri = plItem.attributes.attributes["map-uri"];
             if (map_uri && !map_uri.includes("http")) {
               plItem.attributes.attributes["map-uri"] = this.baseUrl + map_uri;
+            }
+            if (this.clearCueTagsInSource) {
+              if (plItem.get("cuein")) {
+                plItem.set("cuein", null);
+              }
+              if (plItem.get("cueout")) {
+                plItem.set("cueout", null);
+              }
+              if (plItem.get("daterange")) {
+                plItem.attributes.attributes.daterange = null;
+              }
+            }
+          }
+        }
+        if (this.clearCueTagsInSource) {
+          for (let i = 0; i < this.playlistsAudio[group][lang].items.PlaylistItem.length; i++) {
+            let plItem = this.playlistsAudio[group][lang].items.PlaylistItem[i];
+            if (plItem.get("cuein")) {
+              plItem.set("cuein", null);
+            }
+            if (plItem.get("cueout")) {
+              plItem.set("cueout", null);
+            }
+            if (plItem.get("daterange")) {
+              plItem.attributes.attributes.daterange = null;
             }
           }
         }

@@ -599,6 +599,9 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
   let mockMasterManifest;
   let mockMediaManifest;
   let mockAudioManifest;
+  let mockMasterManifest2;
+  let mockMediaManifest2;
+  let mockAudioManifest2;
   let mockAdMasterManifest;
   let mockAdMediaManifest;
   let mockAdAudioManifest;
@@ -718,7 +721,21 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
     };
     mockAdAudioManifest5 = (g, l) => {
       return fs.createReadStream(`testvectors/demux/ad5/index_${g}-${l}_a.m3u8`);
-    };    
+    };
+    // MOCK VOD #9
+    mockMasterManifest2 = () => {
+      return fs.createReadStream("testvectors/hls2_cue/master.m3u8");
+    };
+    mockMediaManifest2 = (bw) => {
+      const bwmap = {
+        4497000: "0",
+        2497000: "1",
+      };
+      return fs.createReadStream(`testvectors/hls2_cue/index_${bwmap[bw]}_v.m3u8`);
+    };
+    mockAudioManifest2 = (g, l) => {
+      return fs.createReadStream(`testvectors/hls2_cue/index_${g}-${l}_a.m3u8`);
+    };
   });
 
   it("can prepend a baseurl on each segment", (done) => {
@@ -1558,6 +1575,34 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
         expect(lines[12]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",DURATION=30,X-ASSET-LIST="http://mock.com/asseturi"'
         );
+        done();
+      });
+  });
+
+  it("can clear out existing cue tags in source vod before adding inserting ad", (done) => {
+    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8", { clearCueTagsInSource: 1 });
+    mockVod
+      .load(mockMasterManifest2, mockMediaManifest2, mockAudioManifest2)
+      .then(() => {
+        return mockVod.insertAdAt(
+          0,
+          "http://mock.com/ad/mockad.m3u8",
+          mockAdMasterManifest,
+          mockAdMediaManifest,
+          mockAdAudioManifest
+        );
+      })
+      .then(() => {
+        const m3u8 = mockVod.getMediaManifest(4497000);
+        let lines = m3u8.split("\n");
+        expect(lines[31]).toBe("segment5_0_av.ts")
+        expect(lines[32]).not.toBe("#EXT-X-CUE-IN")
+        expect(lines[33]).not.toBe(`#EXT-X-DATERANGE:ID="1-804",START-DATE="1970-01-01T00:13:24Z",PLANNED-DURATION="0",SCTE35-OUT="0xFC302000000000000000FFF00F05000000017FFFFE000000000000000000007A3D9BBD"`)
+        const m3u8Audio = mockVod.getAudioManifest("stereo", "en");
+        lines = m3u8Audio.split("\n");
+        expect(lines[31]).toBe("segment5_sen_a.ts")
+        expect(lines[32]).not.toBe("#EXT-X-CUE-IN")
+        expect(lines[33]).not.toBe(`#EXT-X-DATERANGE:ID="1-804",START-DATE="1970-01-01T00:13:24Z",PLANNED-DURATION="0",SCTE35-OUT="0xFC302000000000000000FFF00F05000000017FFFFE000000000000000000007A3D9BBD"`)
         done();
       });
   });

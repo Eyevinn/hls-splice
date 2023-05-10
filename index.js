@@ -49,9 +49,11 @@ class HLSSpliceVod {
     this.masterManifestUri = vodManifestUri;
     this.playlists = {};
     this.playlistsAudio = {};
+    this.playlistsSubtitle = {};
     this.baseUrl = null;
     this.targetDuration = 0;
     this.targetDurationAudio = 0;
+    this.targetDurationSubtitle = 0;
     this.mergeBreaks = false; // Merge ad breaks at the same position into one single break
     this.bumperDuration = null;
     this.log = null;
@@ -81,11 +83,15 @@ class HLSSpliceVod {
     if (options && options.clearCueTagsInSource) {
       this.clearCueTagsInSource = options.clearCueTagsInSource;
     }
-    this.cmafMapUri = { video: {}, audio: {} };
+    if (options && options.dummySubtitleEndpoint) {
+      this.dummySubtitleEndpoint = options.dummySubtitleEndpoint;
+    }
+
+    this.cmafMapUri = { video: {}, audio: {}, subtitle: {} };
 
   }
 
-  loadMasterManifest(_injectMasterManifest, _injectMediaManifest, _injectAudioManifest) {
+  loadMasterManifest(_injectMasterManifest, _injectMediaManifest, _injectAudioManifest, _injectSubtitleManifest) {
     return new Promise((resolve, reject) => {
       const parser = m3u8.createStream();
 
@@ -111,7 +117,7 @@ class HLSSpliceVod {
    * @param {ReadStream} _injectMasterManifest
    * @param {ReadStream} _injectMediaManifest
    */
-  load(_injectMasterManifest, _injectMediaManifest, _injectAudioManifest) {
+  load(_injectMasterManifest, _injectMediaManifest, _injectAudioManifest, _injectSubtitleManifest) {
     return new Promise((resolve, reject) => {
       const parser = m3u8.createStream();
 
@@ -138,7 +144,7 @@ class HLSSpliceVod {
         let audioItems = m3u.items.MediaItem.filter((item) => {
           return item.attributes.attributes.type === "AUDIO";
         });
-        let loadedGroupLangs = [];
+        let loadedAudioGroupLangs = [];
         for (let i = 0; i < audioItems.length; i++) {
           const audioItem = audioItems[i];
           // If no uri on mediaItem then it must exist on a streamItem
@@ -164,14 +170,54 @@ class HLSSpliceVod {
           }
           const audioItemGroupId = audioItem.get("group-id");
           const audioItemLanguage = audioItem.get("language") ? audioItem.get("language") : audioItem.get("name");
-          if (loadedGroupLangs.includes(`${audioItemGroupId}-${audioItemLanguage}`)) {
+          if (loadedAudioGroupLangs.includes(`${audioItemGroupId}-${audioItemLanguage}`)) {
             continue;
           } else {
-            loadedGroupLangs.push(`${audioItemGroupId}-${audioItemLanguage}`);
+            loadedAudioGroupLangs.push(`${audioItemGroupId}-${audioItemLanguage}`);
           }
           const audioManifestUrl = url.resolve(baseUrl, audioItemUri);
           mediaManifestPromises.push(
             this.loadAudioManifest(audioManifestUrl, audioItemGroupId, audioItemLanguage, _injectAudioManifest)
+          );
+        }
+
+        let subtitleItems = m3u.items.MediaItem.filter((item) => {
+          return item.attributes.attributes.type === "SUBTITLES";
+        });
+        let loadedSubtitleGroupLangs = [];
+        for (let i = 0; i < subtitleItems.length; i++) {
+          const subtitleItem = subtitleItems[i];
+          // If no uri on mediaItem then it must exist on a streamItem
+          let subtitleItemUri;
+          if (!subtitleItem.get("uri")) {
+            const aItemGroup = subtitleItem.get("group-id");
+            const subtitleStreamItem = m3u.items.StreamItem.filter((streamItem) => {
+              if (streamItem.get("resolution") === undefined) {
+                return true;
+              }
+              let streamGroupId = streamItem.get("subtitles");
+              if (streamGroupId === aItemGroup) {
+                return false;
+              } else {
+                return true;
+              }
+            })[0];
+            if (subtitleStreamItem) {
+              subtitleItemUri = subtitleStreamItem.get("uri");
+            }
+          } else {
+            subtitleItemUri = subtitleItem.get("uri");
+          }
+          const subtitleItemGroupId = subtitleItem.get("group-id");
+          const subtitleItemLanguage = subtitleItem.get("language") ? subtitleItem.get("language") : subtitleItem.get("name");
+          if (loadedSubtitleGroupLangs.includes(`${subtitleItemGroupId}-${subtitleItemLanguage}`)) {
+            continue;
+          } else {
+            loadedSubtitleGroupLangs.push(`${subtitleItemGroupId}-${subtitleItemLanguage}`);
+          }
+          const subtitleManifestUrl = url.resolve(baseUrl, subtitleItemUri);
+          mediaManifestPromises.push(
+            this.loadSubtitleManifest(subtitleManifestUrl, subtitleItemGroupId, subtitleItemLanguage, _injectSubtitleManifest)
           );
         }
         Promise.all(mediaManifestPromises).then(resolve).catch(reject);
@@ -189,14 +235,106 @@ class HLSSpliceVod {
     });
   }
 
-  insertAdAt(offset, adMasterManifestUri, _injectAdMasterManifest, _injectAdMediaManifest, _injectAdAudioManifest) {
+  _createFakeSubtitles(videoPlaylist) {
+    let bw = Object.keys(videoPlaylist)
+
+    const [nearestGroup, nearestLang] = findNearestGroupAndLang("temp", "temp", this.playlistsSubtitle)
+    let subtitleItems = {};
+    subtitleItems[nearestGroup] = {};
+    subtitleItems[nearestGroup][nearestLang] = {};
+
+    const vp = videoPlaylist[bw]
+
+    let m3u = m3u8.M3U.create();
+
+    vp.items.PlaylistItem.forEach(element => m3u.addPlaylistItem(element.properties))
+
+    subtitleItems[nearestGroup][nearestLang] = m3u
+    const playlist = subtitleItems[nearestGroup][nearestLang];
+
+    let duration = 0;
+    for (let index = 0; index < playlist.items.PlaylistItem.length; index++) {
+      if (playlist.items.PlaylistItem[index].get("duration")) {
+        duration += playlist.items.PlaylistItem[index].get("duration");
+        playlist.items.PlaylistItem[index].set("uri", this.dummySubtitleEndpoint)
+      }
+    }
+    return [subtitleItems, duration];
+  }
+
+  _insertAdAtExtraMedia(startOffset, offset, playlists, adPlaylists, targetDuration, adDuration, isPostRoll) {
+    let groups = Object.keys(playlists)
+    if (isPostRoll) {
+      let duration = 0;
+      const langs = Object.keys(playlists[groups[0]]);
+      playlists[groups[0]][langs[0]].items.PlaylistItem.map((plItem) => {
+        duration += plItem.get("duration") * 1000;
+      });
+      offset = duration;
+    } else {
+      if (this.bumperDuration) {
+        offset = this.bumperDuration + startOffset;
+      }
+    }
+    for (let i = 0; i < groups.length; i++) {
+      const g = groups[i];
+      const langs = Object.keys(playlists[g]);
+      for (let ii = 0; ii < langs.length; ii++) {
+        const l = langs[ii];
+        const playlist = playlists[g][l];
+        const [nearestGroup, nearestLang] = findNearestGroupAndLang(g, l, adPlaylists);
+        const adPlaylist = adPlaylists[nearestGroup][nearestLang];
+        let pos = 0;
+        let idx = 0;
+        let closestCmafMapUri = this._getCmafMapUri(playlist, this.masterManifestUri, this.baseUrl);
+
+        while (pos < offset && idx < playlist.items.PlaylistItem.length) {
+          const plItem = playlist.items.PlaylistItem[idx];
+          if (plItem.get("map-uri")) {
+            closestCmafMapUri = this._getCmafMapUri(playlist, this.masterManifestUri, this.baseUrl, idx);
+          }
+          pos += plItem.get("duration") * 1000;
+          idx++;
+        }
+        let insertCueIn = false;
+        if (playlist.items.PlaylistItem[playlist.items.PlaylistItem.length - 1].get("cuein")) {
+          insertCueIn = true;
+        }
+        const adLength = adPlaylist.items.PlaylistItem.length;
+        for (let j = 0; j < adLength; j++) {
+          playlist.items.PlaylistItem.splice(idx + j, 0, adPlaylist.items.PlaylistItem[j]);
+        }
+        playlist.items.PlaylistItem[idx].set("discontinuity", true);
+        playlist.items.PlaylistItem[idx].set("cueout", adDuration);
+        if (insertCueIn) {
+          playlist.items.PlaylistItem[idx].set("cuein", true);
+        }
+
+        if (playlist.items.PlaylistItem[idx + adLength]) {
+          playlist.items.PlaylistItem[idx + adLength].set("cuein", true);
+          if (!isPostRoll) {
+            playlist.items.PlaylistItem[idx + adLength].set("discontinuity", true);
+          }
+          if (closestCmafMapUri && !playlist.items.PlaylistItem[idx + adLength].get("cueout")) {
+            playlist.items.PlaylistItem[idx + adLength].set("map-uri", closestCmafMapUri);
+          }
+        } else {
+          playlist.addPlaylistItem({ cuein: true });
+        }
+        playlist.set("targetDuration", targetDuration);
+      }
+    }
+  }
+
+  insertAdAt(offset, adMasterManifestUri, _injectAdMasterManifest, _injectAdMediaManifest, _injectAdAudioManifest, _injectAdSubtitleManifest) {
     this.ad = {};
     return new Promise((resolve, reject) => {
       this._parseAdMasterManifest(
         adMasterManifestUri,
         _injectAdMasterManifest,
         _injectAdMediaManifest,
-        _injectAdAudioManifest
+        _injectAdAudioManifest,
+        _injectAdSubtitleManifest
       )
         .then((ad) => {
           this.ad = ad;
@@ -205,6 +343,14 @@ class HLSSpliceVod {
           const isPostRoll = offset == -1;
           const bandwidths = Object.keys(this.playlists);
           let closestCmafMapUri = "";
+
+          const adSubtitleGroups = Object.keys(ad.playlistSubtitle);
+          const subtitleGroups = Object.keys(this.playlistsSubtitle);
+          if (adSubtitleGroups.length < 1 && subtitleGroups.length > 0) {
+            const [playlist, duration] = this._createFakeSubtitles(ad.playlist);
+            ad.playlistSubtitle = playlist;
+            ad.durationSubtile = duration;
+          }
 
           if (isPostRoll) {
             let duration = 0;
@@ -260,74 +406,55 @@ class HLSSpliceVod {
             }
             this.playlists[bw].set("targetDuration", this.targetDuration);
           }
-          const groups = Object.keys(this.playlistsAudio);
-          const adGroups = Object.keys(ad.playlistAudio);
-          if (groups.length > 0 && adGroups.length > 0) {
-            if (isPostRoll) {
-              let duration = 0;
-              const langs = Object.keys(this.playlistsAudio[groups[0]]);
-              this.playlistsAudio[groups[0]][langs[0]].items.PlaylistItem.map((plItem) => {
-                duration += plItem.get("duration") * 1000;
-              });
-              offset = duration;
-            } else {
-              if (this.bumperDuration) {
-                offset = this.bumperDuration + startOffset;
-              }
-            }
-            for (let i = 0; i < groups.length; i++) {
-              const g = groups[i];
-              const langs = Object.keys(this.playlistsAudio[g]);
-              for (let ii = 0; ii < langs.length; ii++) {
-                const l = langs[ii];
-                const playlist = this.playlistsAudio[g][l];
-                const [nearestGroup, nearestLang] = findNearestGroupAndLang(g, l, ad.playlistAudio);
-                const adPlaylist = ad.playlistAudio[nearestGroup][nearestLang];
-                let pos = 0;
-                let idx = 0;
-                closestCmafMapUri = this._getCmafMapUri(playlist, this.masterManifestUri, this.baseUrl);
+          const audioGroups = Object.keys(this.playlistsAudio);
+          const adAudioGroups = Object.keys(ad.playlistAudio);
+          if (audioGroups.length > 0 && adAudioGroups.length > 0) {
+            this._insertAdAtExtraMedia(startOffset, offset, this.playlistsAudio, ad.playlistAudio, this.targetDurationAudio, ad.durationAudio, isPostRoll)
+          }
 
-                while (pos < offset && idx < playlist.items.PlaylistItem.length) {
-                  const plItem = playlist.items.PlaylistItem[idx];
-                  if (plItem.get("map-uri")) {
-                    closestCmafMapUri = this._getCmafMapUri(playlist, this.masterManifestUri, this.baseUrl, idx);
-                  }
-                  pos += plItem.get("duration") * 1000;
-                  idx++;
-                }
-                let insertCueIn = false;
-                if (playlist.items.PlaylistItem[playlist.items.PlaylistItem.length - 1].get("cuein")) {
-                  insertCueIn = true;
-                }
-                const adLength = adPlaylist.items.PlaylistItem.length;
-                for (let j = 0; j < adLength; j++) {
-                  playlist.items.PlaylistItem.splice(idx + j, 0, adPlaylist.items.PlaylistItem[j]);
-                }
-                playlist.items.PlaylistItem[idx].set("discontinuity", true);
-                playlist.items.PlaylistItem[idx].set("cueout", ad.durationAudio);
-                if (insertCueIn) {
-                  playlist.items.PlaylistItem[idx].set("cuein", true);
-                }
-
-                if (playlist.items.PlaylistItem[idx + adLength]) {
-                  playlist.items.PlaylistItem[idx + adLength].set("cuein", true);
-                  if (!isPostRoll) {
-                    playlist.items.PlaylistItem[idx + adLength].set("discontinuity", true);
-                  }
-                  if (closestCmafMapUri && !playlist.items.PlaylistItem[idx + adLength].get("cueout")) {
-                    playlist.items.PlaylistItem[idx + adLength].set("map-uri", closestCmafMapUri);
-                  }
-                } else {
-                  playlist.addPlaylistItem({ cuein: true });
-                }
-                playlist.set("targetDuration", this.targetDurationAudio);
-              }
-            }
+          if (subtitleGroups.length > 0) {
+            this._insertAdAtExtraMedia(startOffset, offset, this.playlistsSubtitle, ad.playlistSubtitle, this.targetDurationSubtitle, ad.durationSubtile, isPostRoll)
           }
           resolve();
         })
         .catch(reject);
     });
+  }
+
+  _insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, plannedDuration, playlists) {
+    const groups = Object.keys(playlists);
+    for (let i = 0; i < groups.length; i++) {
+      const group = groups[i];
+      const langs = Object.keys(playlists[group]);
+      for (let j = 0; j < langs.length; j++) {
+        const lang = langs[j];
+        let pos = 0;
+        let idx = 0;
+        let playlist = playlists[group][lang];
+        playlist.items.PlaylistItem[0].set("date", new Date(1));
+        while (pos < offset && idx < playlist.items.PlaylistItem.length) {
+          const plItem = playlist.items.PlaylistItem[idx];
+          pos += plItem.get("duration") * 1000;
+          idx++;
+        }
+        let startDate = new Date(1 + offset).toISOString();
+        let durationTag = "";
+        if (plannedDuration) {
+          durationTag = `,DURATION=${plannedDuration / 1000}`;
+        }
+        if (isAssetList) {
+          playlist.items.PlaylistItem[idx].set(
+            "daterange",
+            `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-LIST="${uri}"${extraAttrs}`
+          );
+        } else {
+          playlist.items.PlaylistItem[idx].set(
+            "daterange",
+            `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-URI="${uri}"${extraAttrs}`
+          );
+        }
+      }
+    }
   }
 
   insertInterstitialAt(offset, id, uri, isAssetList, opts) {
@@ -377,47 +504,45 @@ class HLSSpliceVod {
           );
         }
       }
-      const groups = Object.keys(this.playlistsAudio);
-      for (let i = 0; i < groups.length; i++) {
-        const group = groups[i];
-        const langs = Object.keys(this.playlistsAudio[group]);
-        for (let j = 0; j < langs.length; j++) {
-          const lang = langs[j];
-          let pos = 0;
-          let idx = 0;
-          this.playlistsAudio[group][lang].items.PlaylistItem[0].set("date", new Date(1));
-          while (pos < offset && idx < this.playlistsAudio[group][lang].items.PlaylistItem.length) {
-            const plItem = this.playlistsAudio[group][lang].items.PlaylistItem[idx];
-            pos += plItem.get("duration") * 1000;
-            idx++;
-          }
-          let startDate = new Date(1 + offset).toISOString();
-          let durationTag = "";
-          if (opts && opts.plannedDuration) {
-            durationTag = `,DURATION=${opts.plannedDuration / 1000}`;
-          }
-          if (isAssetList) {
-            this.playlistsAudio[group][lang].items.PlaylistItem[idx].set(
-              "daterange",
-              `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-LIST="${uri}"${extraAttrs}`
-            );
-          } else {
-            this.playlistsAudio[group][lang].items.PlaylistItem[idx].set(
-              "daterange",
-              `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-URI="${uri}"${extraAttrs}`
-            );
-          }
-        }
-      }
+
+      let plannedDuration = (opts && opts.plannedDuration) ? opts.plannedDuration : 0;
+
+      this._insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, plannedDuration, this.playlistsAudio)
+
+      this._insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, plannedDuration, this.playlistsSubtitle)
+
       resolve();
     });
+  }
+
+  _insertBumperExtraMedia(playlists, bumperPlaylists, targetDuration) {
+    const groups = Object.keys(playlists);
+    for (let i = 0; i < groups.length; i++) {
+      const g = groups[i];
+      const langs = Object.keys(playlists[g]);
+      for (let ii = 0; ii < langs.length; ii++) {
+        const l = langs[ii];
+
+        const [nearestGroup, nearestLang] = findNearestGroupAndLang(g, l, bumperPlaylists);
+        const bumperPlaylist = bumperPlaylists[nearestGroup][nearestLang];
+        const bumperLength = bumperPlaylist.items.PlaylistItem.length;
+        this.bumperDuration = 0;
+        for (let j = 0; j < bumperLength; j++) {
+          playlists[g][l].items.PlaylistItem.splice(j, 0, bumperPlaylist.items.PlaylistItem[j]);
+          this.bumperDuration += bumperPlaylist.items.PlaylistItem[j].get("duration") * 1000;
+        }
+        playlists[g][l].items.PlaylistItem[bumperLength].set("discontinuity", true);
+        playlists[g][l].set("targetDuration", targetDuration);
+      }
+    }
   }
 
   insertBumper(
     bumperMasterManifestUri,
     _injectBumperMasterManifest,
     _injectBumperMediaManifest,
-    _injectBumperAudioManifest
+    _injectBumperAudioManifest,
+    _injectBumperSubtitleManifest
   ) {
     this.bumper = {};
     return new Promise((resolve, reject) => {
@@ -425,10 +550,18 @@ class HLSSpliceVod {
         bumperMasterManifestUri,
         _injectBumperMasterManifest,
         _injectBumperMediaManifest,
-        _injectBumperAudioManifest
+        _injectBumperAudioManifest,
+        _injectBumperSubtitleManifest
       )
         .then((bumper) => {
           this.bumper = bumper;
+
+          const adSubtitleGroups = Object.keys(bumper.playlistSubtitle);
+          const subtitleGroups = Object.keys(this.playlistsSubtitle);
+          if (adSubtitleGroups.length < 1 && subtitleGroups.length > 0) {
+            const [playlist, _] = this._createFakeSubtitles(bumper.playlist);
+            bumper.playlistSubtitle = playlist;
+          }
 
           const bandwidths = Object.keys(this.playlists);
           for (let b = 0; b < bandwidths.length; b++) {
@@ -445,25 +578,10 @@ class HLSSpliceVod {
             this.playlists[bw].set("targetDuration", this.targetDuration);
           }
           // for audio
-          const groups = Object.keys(this.playlistsAudio);
-          for (let i = 0; i < groups.length; i++) {
-            const g = groups[i];
-            const langs = Object.keys(this.playlistsAudio[g]);
-            for (let ii = 0; ii < langs.length; ii++) {
-              const l = langs[ii];
+          this._insertBumperExtraMedia(this.playlistsAudio, bumper.playlistAudio, this.targetDurationAudio)
 
-              const [nearestGroup, nearestLang] = findNearestGroupAndLang(g, l, bumper.playlistAudio);
-              const bumperPlaylist = bumper.playlistAudio[nearestGroup][nearestLang];
-              const bumperLength = bumperPlaylist.items.PlaylistItem.length;
-              this.bumperDuration = 0;
-              for (let j = 0; j < bumperLength; j++) {
-                this.playlistsAudio[g][l].items.PlaylistItem.splice(j, 0, bumperPlaylist.items.PlaylistItem[j]);
-                this.bumperDuration += bumperPlaylist.items.PlaylistItem[j].get("duration") * 1000;
-              }
-              this.playlistsAudio[g][l].items.PlaylistItem[bumperLength].set("discontinuity", true);
-              this.playlistsAudio[g][l].set("targetDuration", this.targetDurationAudio);
-            }
-          }
+          this._insertBumperExtraMedia(this.playlistsSubtitle, bumper.playlistSubtitle, this.targetDurationSubtitle)
+
           resolve();
         })
         .catch(reject);
@@ -545,6 +663,41 @@ class HLSSpliceVod {
     }
   }
 
+  getSubtitleManifest(g, l) {
+    try {
+      if (this.mergeBreaks) {
+        let adBreakDuration = 0;
+        let itemToUpdate = null;
+        for (let i = 0; i < this.playlistsSubtitle[g][l].items.PlaylistItem.length; i++) {
+          if (
+            this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cueout") &&
+            this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cuein")
+          ) {
+            adBreakDuration += this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cueout");
+            this.playlistsSubtitle[g][l].items.PlaylistItem[i].set("cueout", null);
+            this.playlistsSubtitle[g][l].items.PlaylistItem[i].set("cuein", false);
+          } else if (
+            this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cueout") &&
+            !this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cuein")
+          ) {
+            adBreakDuration = 0;
+            itemToUpdate = this.playlistsSubtitle[g][l].items.PlaylistItem[i];
+          } else if (
+            !this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cueout") &&
+            this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cuein")
+          ) {
+            const cueOut = itemToUpdate.get("cueout");
+            itemToUpdate.set("cueout", Math.round(cueOut + adBreakDuration));
+          }
+        }
+      }
+      this.playlistsSubtitle[g][l].set("playlistType", "VOD"); // Ensure playlist type is VOD
+      return this.playlistsSubtitle[g][l].toString().replace(/^\s*\n/gm, "");
+    } catch (err) {
+      return new Error("Failed to get manifest. " + err);
+    }
+  }
+
   loadMediaManifest(mediaManifestUri, bandwidth, _injectMediaManifest) {
     return new Promise((resolve, reject) => {
       const parser = m3u8.createStream();
@@ -570,15 +723,15 @@ class HLSSpliceVod {
         if (this.clearCueTagsInSource) {
           for (let i = 0; i < this.playlists[bandwidth].items.PlaylistItem.length; i++) {
             const plItem = this.playlists[bandwidth].items.PlaylistItem[i];
-              if (plItem.get("cuein")) {
-                plItem.set("cuein", false);
-              }
-              if (plItem.get("cueout")) {
-                plItem.set("cueout", null);
-              }
-              if (plItem.get("daterange")) {
-                plItem.attributes.attributes.daterange = null;
-              }
+            if (plItem.get("cuein")) {
+              plItem.set("cuein", false);
+            }
+            if (plItem.get("cueout")) {
+              plItem.set("cueout", null);
+            }
+            if (plItem.get("daterange")) {
+              plItem.attributes.attributes.daterange = null;
+            }
           }
         }
         const targetDuration = this.playlists[bandwidth].get("targetDuration");
@@ -686,7 +839,86 @@ class HLSSpliceVod {
     });
   }
 
-  _parseAdMasterManifest(manifestUri, _injectAdMasterManifest, _injectAdMediaManifest, _injectAdAudioManifest) {
+  loadSubtitleManifest(subtitleManifestUri, group, lang, _injectSubtitleManifest) {
+    return new Promise((resolve, reject) => {
+      const parser = m3u8.createStream();
+      parser.on("m3u", (m3u) => {
+        this.duration = 0;
+        if (!this.playlistsSubtitle[group]) {
+          this.playlistsSubtitle[group] = {};
+        }
+        if (!this.playlistsSubtitle[group][lang]) {
+          this.playlistsSubtitle[group][lang] = m3u;
+        }
+
+        if (this.baseUrl) {
+          for (let i = 0; i < this.playlistsSubtitle[group][lang].items.PlaylistItem.length; i++) {
+            let plItem = this.playlistsSubtitle[group][lang].items.PlaylistItem[i];
+            let uri = plItem.get("uri");
+            if (!uri.includes("http")) {
+              plItem.set("uri", this.baseUrl + uri);
+            }
+            let map_uri = plItem.attributes.attributes["map-uri"];
+            if (map_uri && !map_uri.includes("http")) {
+              plItem.attributes.attributes["map-uri"] = this.baseUrl + map_uri;
+            }
+            if (this.clearCueTagsInSource) {
+              if (plItem.get("cuein")) {
+                plItem.set("cuein", null);
+              }
+              if (plItem.get("cueout")) {
+                plItem.set("cueout", null);
+              }
+              if (plItem.get("daterange")) {
+                plItem.attributes.attributes.daterange = null;
+              }
+            }
+          }
+        }
+        if (this.clearCueTagsInSource) {
+          for (let i = 0; i < this.playlistsSubtitle[group][lang].items.PlaylistItem.length; i++) {
+            let plItem = this.playlistsSubtitle[group][lang].items.PlaylistItem[i];
+            if (plItem.get("cuein")) {
+              plItem.set("cuein", null);
+            }
+            if (plItem.get("cueout")) {
+              plItem.set("cueout", null);
+            }
+            if (plItem.get("daterange")) {
+              plItem.attributes.attributes.daterange = null;
+            }
+          }
+        }
+        const targetDuration = this.playlistsSubtitle[group][lang].get("targetDuration");
+        if (targetDuration > this.targetDurationSubtitle) {
+          this.targetDurationSubtitle = targetDuration;
+        }
+        this.playlistsSubtitle[group][lang].set("targetDuration", this.targetDurationSubtitle);
+        
+        const initSegUri = this._getCmafMapUri(m3u, subtitleManifestUri, this.baseUrl);
+        if (initSegUri) {
+          if (!this.cmafMapUri.subtitle[group]) {
+            this.cmafMapUri.subtitle[group] = {};
+          }
+          this.cmafMapUri.subtitle[group][lang] =
+            this.baseUrl && !initSegUri.includes("http") ? this.baseUrl + initSegUri : initSegUri;
+        }
+        resolve();
+      });
+
+      if (!_injectSubtitleManifest) {
+        try {
+          request({ uri: subtitleManifestUri, gzip: true }).pipe(parser);
+        } catch (exc) {
+          reject(exc);
+        }
+      } else {
+        _injectSubtitleManifest(group, lang).pipe(parser);
+      }
+    });
+  }
+
+  _parseAdMasterManifest(manifestUri, _injectAdMasterManifest, _injectAdMediaManifest, _injectAdAudioManifest, _injectAdSubtitleManifest) {
     return new Promise((resolve, reject) => {
       let ad = {};
       const parser = m3u8.createStream();
@@ -697,6 +929,7 @@ class HLSSpliceVod {
         ad.bandwidths = [];
         ad.playlist = {};
         ad.playlistAudio = {};
+        ad.playlistSubtitle = {};
         ad.baseUrl = null;
         const m = manifestUri.match(/^(.*)\/.*?$/);
         if (m) {
@@ -821,6 +1054,69 @@ class HLSSpliceVod {
               }
             } else {
               _injectAdAudioManifest(g, l).pipe(audioManifestParser);
+            }
+          });
+          mediaManifestPromises.push(p);
+        }
+
+        let subtitleItems = m3u.items.MediaItem.filter((item) => {
+          return item.attributes.attributes.type === "SUBTITLES";
+        });
+        for (let i = 0; i < subtitleItems.length; i++) {
+          const subtitleItem = subtitleItems[i];
+          const g = subtitleItem.get("group-id");
+          const l = subtitleItem.get("language") ? subtitleItem.get("language") : subtitleItem.get("name");
+          const subtitleManifestUrl = url.resolve(ad.baseUrl, subtitleItem.get("uri"));
+          const p = new Promise((res, rej) => {
+            const subtitleManifestParser = m3u8.createStream();
+
+            subtitleManifestParser.on("m3u", (m3u) => {
+              if (m3u.get("targetDuration") > this.targetDurationSubtitle) {
+                this.targetDurationSubtitle = m3u.get("targetDuration");
+              }
+              ad.durationSubtile = 0;
+              let baseUrl;
+              const n = subtitleManifestUrl.match("^(.*)/.*?");
+              if (n) {
+                baseUrl = n[1] + "/";
+              }
+              for (let j = 0; j < m3u.items.PlaylistItem.length; j++) {
+                let plItem = m3u.items.PlaylistItem[j];
+                const plUri = plItem.get("uri");
+                if (!plUri.match("^http")) {
+                  plItem.set("uri", url.resolve(baseUrl, plUri));
+                }
+                const plMapUri = plItem.get("map-uri");
+                if (plMapUri && !plMapUri.match(/^http/)) {
+                  plItem.set("map-uri", url.resolve(baseUrl, plMapUri));
+                }
+                ad.durationSubtile += plItem.get("duration");
+              }
+
+              if (!ad.playlistSubtitle[g]) {
+                ad.playlistSubtitle[g] = {};
+              }
+              if (!ad.playlistSubtitle[g][l]) {
+                ad.playlistSubtitle[g][l] = m3u;
+              }
+              res();
+            });
+            subtitleManifestParser.on("error", (err) => {
+              rej(err);
+            });
+            if (!_injectAdSubtitleManifest) {
+              try {
+                this.logger(`GET: "${subtitleManifestUrl}"`);
+                request({ uri: subtitleManifestUrl, gzip: true })
+                  .on("error", (err) => {
+                    rej(err);
+                  })
+                  .pipe(subtitleManifestParser);
+              } catch (err) {
+                rej(err);
+              }
+            } else {
+              _injectAdSubtitleManifest(g, l).pipe(subtitleManifestParser);
             }
           });
           mediaManifestPromises.push(p);

@@ -579,7 +579,7 @@ class HLSSpliceVod {
             this.playlists[bw].items.PlaylistItem[bumperLength].set("discontinuity", true);
             this.playlists[bw].set("targetDuration", this.targetDuration);
           }
-          // for audio
+
           this._insertBumperExtraMedia(this.playlistsAudio, bumper.playlistAudio, this.targetDurationAudio)
 
           this._insertBumperExtraMedia(this.playlistsSubtitle, bumper.playlistSubtitle, this.targetDurationSubtitle)

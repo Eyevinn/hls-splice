@@ -236,7 +236,7 @@ class HLSSpliceVod {
   }
 
   _createFakeSubtitles(videoPlaylist) {
-    let bw = Object.keys(videoPlaylist)
+    let bw = Object.keys(videoPlaylist)[0];
 
     const [nearestGroup, nearestLang] = findNearestGroupAndLang("temp", "temp", this.playlistsSubtitle)
     let subtitleItems = {};
@@ -942,6 +942,58 @@ class HLSSpliceVod {
           return null;
         });
         ad.bandwidths = adBandwidths;
+
+        if (Object.keys(this.playlists).length === 0) {
+          const targetAdStreamItem = m3u.items.StreamItem[0];
+          const mediaManifestUrl = url.resolve(ad.baseUrl, targetAdStreamItem.get("uri"));
+          const p = new Promise((res, rej) => {
+            const mediaManifestParser = m3u8.createStream();
+            mediaManifestParser.on("m3u", (m3u) => {
+              if (m3u.get("targetDuration") > this.targetDuration) {
+                this.targetDuration = m3u.get("targetDuration");
+              }
+              ad.duration = 0;
+              let baseUrl;
+              const n = mediaManifestUrl.match("^(.*)/.*?");
+              if (n) {
+                baseUrl = n[1] + "/";
+              }
+              for (let j = 0; j < m3u.items.PlaylistItem.length; j++) {
+                let plItem = m3u.items.PlaylistItem[j];
+                const plUri = plItem.get("uri");
+                if (!plUri.match("^http")) {
+                  plItem.set("uri", url.resolve(baseUrl, plUri));
+                }
+                const plMapUri = plItem.get("map-uri");
+                if (plMapUri && !plMapUri.match(/^http/)) {
+                  plItem.set("map-uri", url.resolve(baseUrl, plMapUri));
+                }
+                ad.duration += plItem.get("duration");
+              }
+              ad.playlist[targetAdStreamItem.get("bandwidth")] = m3u;
+              res();
+            });
+            mediaManifestParser.on("error", (err) => {
+              rej(err);
+            });
+            if (!_injectAdMediaManifest) {
+              try {
+                this.logger(`GET: "${mediaManifestUrl}"`);
+                request({ uri: mediaManifestUrl, gzip: true })
+                  .on("error", (err) => {
+                    rej(err);
+                  })
+                  .pipe(mediaManifestParser);
+              } catch (err) {
+                rej(err);
+              }
+            } else {
+              _injectAdMediaManifest(targetAdStreamItem.get("bandwidth")).pipe(mediaManifestParser);
+            }
+          });
+          mediaManifestPromises.push(p);
+        }
+
         for (let _bw of Object.keys(this.playlists)) {
           const targetBw = findNearestBw(_bw, adBandwidths);
           const targetStreamItem = m3u.items.StreamItem.find((streamItem) => streamItem.get("bandwidth") === targetBw);

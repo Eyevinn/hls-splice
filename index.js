@@ -249,14 +249,16 @@ class HLSSpliceVod {
 
     vp.items.PlaylistItem.forEach(element => m3u.addPlaylistItem(element.properties))
 
-    subtitleItems[nearestGroup][nearestLang] = m3u
+    subtitleItems[nearestGroup][nearestLang] = m3u;
     const playlist = subtitleItems[nearestGroup][nearestLang];
-
+    if (!this.dummySubtitleEndpoint) {
+      console.log(`[WARNING]: Option 'dummySubtitleEndpoint' is not set!`);
+    }
     let duration = 0;
     for (let index = 0; index < playlist.items.PlaylistItem.length; index++) {
       if (playlist.items.PlaylistItem[index].get("duration")) {
         duration += playlist.items.PlaylistItem[index].get("duration");
-        playlist.items.PlaylistItem[index].set("uri", this.dummySubtitleEndpoint)
+        playlist.items.PlaylistItem[index].set("uri", this.dummySubtitleEndpoint);
       }
     }
     return [subtitleItems, duration];

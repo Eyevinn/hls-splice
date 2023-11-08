@@ -17,6 +17,11 @@ const findNearestBw = (bw, array) => {
 
 const NOT_MULTIVARIANT_ERROR_MSG = "Error: Source is Not a Multivariant Manifest";
 
+let DUMMY_SUBTITLE_COUNT = 0;
+const getDummySubtitleSegmentId = () => {
+  return DUMMY_SUBTITLE_COUNT++;
+}
+
 const findNearestGroupAndLang = (_group, _language, _playlist) => {
   const groups = Object.keys(_playlist);
   let group = groups[0]; // default
@@ -258,7 +263,7 @@ class HLSSpliceVod {
     for (let index = 0; index < playlist.items.PlaylistItem.length; index++) {
       if (playlist.items.PlaylistItem[index].get("duration")) {
         duration += playlist.items.PlaylistItem[index].get("duration");
-        playlist.items.PlaylistItem[index].set("uri", this.dummySubtitleEndpoint);
+        playlist.items.PlaylistItem[index].set("uri", this.dummySubtitleEndpoint + `?id=${getDummySubtitleSegmentId()}`);
       }
     }
     return [subtitleItems, duration];

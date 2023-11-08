@@ -95,7 +95,7 @@ describe("HLSSpliceVod with subs", () => {
         expect(substringsSubs[11]).toBe("#EXT-X-DISCONTINUITY");
         expect(substringsSubs[12]).toBe("#EXT-X-CUE-OUT:DURATION=15");
         expect(substringsSubs[13]).toBe("#EXTINF:3.0000,");
-        expect(substringsSubs[14]).toBe("/dummy");
+        expect(substringsSubs[14]).toContain("/dummy?id=");
         expect(substringsSubs[24]).toBe("#EXT-X-CUE-IN");
         done();
       });
@@ -193,7 +193,7 @@ describe("HLSSpliceVod with subs", () => {
         expect(substrings[7]).toBe("http://mock.com/ad/ad1_0_av.ts");
         expect(substrings[16]).toBe("#EXT-X-DISCONTINUITY");
 
-        expect(substringsSubs[6]).toBe("/dummy");
+        expect(substringsSubs[6]).toContain("/dummy?id=");
         expect(substringsSubs[15]).toBe("#EXT-X-DISCONTINUITY");
         done();
       });

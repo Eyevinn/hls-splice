@@ -479,7 +479,7 @@ class HLSSpliceVod {
           }
         }
         let durationTag = "";
-        if (opts.plannedDuration) {
+        if (opts && opts.plannedDuration) {
           durationTag = `,DURATION=${opts.plannedDuration / 1000}`;
         }
         if (isAssetList) {

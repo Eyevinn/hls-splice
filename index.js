@@ -474,7 +474,7 @@ class HLSSpliceVod {
         while (pos < offset && idx < playlist.items.PlaylistItem.length) {
           const plItem = playlist.items.PlaylistItem[idx];
           pos += plItem.get("duration") * 1000;
-          if (pos < offset) {
+          if (pos <= offset) {
             idx++;
           }
         }
@@ -550,7 +550,7 @@ class HLSSpliceVod {
         while (pos < offset && i < this.playlists[bw].items.PlaylistItem.length) {
           const plItem = this.playlists[bw].items.PlaylistItem[i];
           pos += plItem.get("duration") * 1000;
-          if (pos < offset) {
+          if (pos <= offset) {
             i++;
           }
         }

@@ -1,6 +1,10 @@
 const HLSSpliceVod = require("../index.js");
 const fs = require("fs");
 
+const ll = (log_lines) => {
+  log_lines.map((line, idx) => console.log(line, idx));
+}
+
 describe("HLSSpliceVod", () => {
   let mockMasterManifest;
   let mockMediaManifest;
@@ -439,7 +443,7 @@ describe("HLSSpliceVod", () => {
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         const lines = m3u8.split("\n");
-        expect(lines[12]).toEqual(
+        expect(lines[10]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:16.001Z",X-ASSET-LIST="http://mock.com/assetlist"'
         );
         done();
@@ -456,7 +460,7 @@ describe("HLSSpliceVod", () => {
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         const lines = m3u8.split("\n");
-        expect(lines[12]).toEqual(
+        expect(lines[10]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:16.001Z",X-ASSET-LIST="/assetlist/sdfsdfjlsdfsdf"'
         );
         done();
@@ -1379,12 +1383,12 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
-        expect(lines[12]).toEqual(
+        expect(lines[10]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:16.001Z",X-ASSET-LIST="http://mock.com/assetlist"'
         );
         const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
         lines = m3u8Audio.split("\n");
-        expect(lines[12]).toEqual(
+        expect(lines[10]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:16.001Z",X-ASSET-LIST="http://mock.com/assetlist"'
         );
         done();
@@ -1401,12 +1405,12 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
-        expect(lines[12]).toEqual(
+        expect(lines[10]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:16.001Z",X-ASSET-LIST="/assetlist/sdfsdfjlsdfsdf"'
         );
         const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
         lines = m3u8Audio.split("\n");
-        expect(lines[12]).toEqual(
+        expect(lines[10]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:16.001Z",X-ASSET-LIST="/assetlist/sdfsdfjlsdfsdf"'
         );
         done();
@@ -1543,6 +1547,7 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
+        
         expect(lines[12]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-SNAP="OUT"'
         );
@@ -1980,13 +1985,12 @@ test-audio=256000-6.m4s`;
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
-        expect(lines[22]).toEqual(
+        expect(lines[20]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:16.001Z",X-ASSET-LIST="http://mock.com/assetlist"'
         );
         const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
         lines = m3u8Audio.split("\n");
-        //lines.map((l, i) => console.log(l, i));
-        expect(lines[28]).toEqual(
+        expect(lines[26]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:16.001Z",X-ASSET-LIST="http://mock.com/assetlist"'
         );
         done();
@@ -2005,12 +2009,14 @@ test-audio=256000-6.m4s`;
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
+
         expect(lines[22]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",DURATION=30,X-ASSET-LIST="http://mock.com/asseturi"'
         );
         const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
         lines = m3u8Audio.split("\n");
-        expect(lines[30]).toEqual(
+       
+        expect(lines[28]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",DURATION=30,X-ASSET-LIST="http://mock.com/asseturi"'
         );
         done();

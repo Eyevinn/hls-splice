@@ -20,7 +20,7 @@ const NOT_MULTIVARIANT_ERROR_MSG = "Error: Source is Not a Multivariant Manifest
 let DUMMY_SUBTITLE_COUNT = 0;
 const getDummySubtitleSegmentId = () => {
   return DUMMY_SUBTITLE_COUNT++;
-}
+};
 
 const findNearestGroupAndLang = (_group, _language, _playlist) => {
   const groups = Object.keys(_playlist);
@@ -93,7 +93,6 @@ class HLSSpliceVod {
     }
 
     this.cmafMapUri = { video: {}, audio: {}, subtitle: {} };
-
   }
 
   loadMasterManifest(_injectMasterManifest, _injectMediaManifest, _injectAudioManifest, _injectSubtitleManifest) {
@@ -214,7 +213,9 @@ class HLSSpliceVod {
             subtitleItemUri = subtitleItem.get("uri");
           }
           const subtitleItemGroupId = subtitleItem.get("group-id");
-          const subtitleItemLanguage = subtitleItem.get("language") ? subtitleItem.get("language") : subtitleItem.get("name");
+          const subtitleItemLanguage = subtitleItem.get("language")
+            ? subtitleItem.get("language")
+            : subtitleItem.get("name");
           if (loadedSubtitleGroupLangs.includes(`${subtitleItemGroupId}-${subtitleItemLanguage}`)) {
             continue;
           } else {
@@ -222,7 +223,12 @@ class HLSSpliceVod {
           }
           const subtitleManifestUrl = url.resolve(baseUrl, subtitleItemUri);
           mediaManifestPromises.push(
-            this.loadSubtitleManifest(subtitleManifestUrl, subtitleItemGroupId, subtitleItemLanguage, _injectSubtitleManifest)
+            this.loadSubtitleManifest(
+              subtitleManifestUrl,
+              subtitleItemGroupId,
+              subtitleItemLanguage,
+              _injectSubtitleManifest
+            )
           );
         }
         Promise.all(mediaManifestPromises).then(resolve).catch(reject);
@@ -243,16 +249,16 @@ class HLSSpliceVod {
   _createFakeSubtitles(videoPlaylist) {
     let bw = Object.keys(videoPlaylist)[0];
 
-    const [nearestGroup, nearestLang] = findNearestGroupAndLang("temp", "temp", this.playlistsSubtitle)
+    const [nearestGroup, nearestLang] = findNearestGroupAndLang("temp", "temp", this.playlistsSubtitle);
     let subtitleItems = {};
     subtitleItems[nearestGroup] = {};
     subtitleItems[nearestGroup][nearestLang] = {};
 
-    const vp = videoPlaylist[bw]
+    const vp = videoPlaylist[bw];
 
     let m3u = m3u8.M3U.create();
 
-    vp.items.PlaylistItem.forEach(element => m3u.addPlaylistItem(element.properties))
+    vp.items.PlaylistItem.forEach((element) => m3u.addPlaylistItem(element.properties));
 
     subtitleItems[nearestGroup][nearestLang] = m3u;
     const playlist = subtitleItems[nearestGroup][nearestLang];
@@ -263,14 +269,17 @@ class HLSSpliceVod {
     for (let index = 0; index < playlist.items.PlaylistItem.length; index++) {
       if (playlist.items.PlaylistItem[index].get("duration")) {
         duration += playlist.items.PlaylistItem[index].get("duration");
-        playlist.items.PlaylistItem[index].set("uri", this.dummySubtitleEndpoint + `?id=${getDummySubtitleSegmentId()}`);
+        playlist.items.PlaylistItem[index].set(
+          "uri",
+          this.dummySubtitleEndpoint + `?id=${getDummySubtitleSegmentId()}`
+        );
       }
     }
     return [subtitleItems, duration];
   }
 
   _insertAdAtExtraMedia(startOffset, offset, playlists, adPlaylists, targetDuration, adDuration, isPostRoll) {
-    let groups = Object.keys(playlists)
+    let groups = Object.keys(playlists);
     if (isPostRoll) {
       let duration = 0;
       const langs = Object.keys(playlists[groups[0]]);
@@ -333,7 +342,14 @@ class HLSSpliceVod {
     }
   }
 
-  insertAdAt(offset, adMasterManifestUri, _injectAdMasterManifest, _injectAdMediaManifest, _injectAdAudioManifest, _injectAdSubtitleManifest) {
+  insertAdAt(
+    offset,
+    adMasterManifestUri,
+    _injectAdMasterManifest,
+    _injectAdMediaManifest,
+    _injectAdAudioManifest,
+    _injectAdSubtitleManifest
+  ) {
     this.ad = {};
     return new Promise((resolve, reject) => {
       this._parseAdMasterManifest(
@@ -416,11 +432,27 @@ class HLSSpliceVod {
           const audioGroups = Object.keys(this.playlistsAudio);
           const adAudioGroups = Object.keys(ad.playlistAudio);
           if (audioGroups.length > 0 && adAudioGroups.length > 0) {
-            this._insertAdAtExtraMedia(startOffset, offset, this.playlistsAudio, ad.playlistAudio, this.targetDurationAudio, ad.durationAudio, isPostRoll)
+            this._insertAdAtExtraMedia(
+              startOffset,
+              offset,
+              this.playlistsAudio,
+              ad.playlistAudio,
+              this.targetDurationAudio,
+              ad.durationAudio,
+              isPostRoll
+            );
           }
 
           if (subtitleGroups.length > 0) {
-            this._insertAdAtExtraMedia(startOffset, offset, this.playlistsSubtitle, ad.playlistSubtitle, this.targetDurationSubtitle, ad.durationSubtile, isPostRoll)
+            this._insertAdAtExtraMedia(
+              startOffset,
+              offset,
+              this.playlistsSubtitle,
+              ad.playlistSubtitle,
+              this.targetDurationSubtitle,
+              ad.durationSubtile,
+              isPostRoll
+            );
           }
           resolve();
         })
@@ -428,7 +460,7 @@ class HLSSpliceVod {
     });
   }
 
-  _insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, plannedDuration, playlists) {
+  _insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, startDate, playlists, opts) {
     const groups = Object.keys(playlists);
     for (let i = 0; i < groups.length; i++) {
       const group = groups[i];
@@ -442,12 +474,13 @@ class HLSSpliceVod {
         while (pos < offset && idx < playlist.items.PlaylistItem.length) {
           const plItem = playlist.items.PlaylistItem[idx];
           pos += plItem.get("duration") * 1000;
-          idx++;
+          if (pos <= offset) {
+            idx++;
+          }
         }
-        let startDate = new Date(1 + offset).toISOString();
         let durationTag = "";
-        if (plannedDuration) {
-          durationTag = `,DURATION=${plannedDuration / 1000}`;
+        if (opts && opts.plannedDuration) {
+          durationTag = `,DURATION=${opts.plannedDuration / 1000}`;
         }
         if (isAssetList) {
           playlist.items.PlaylistItem[idx].set(
@@ -469,7 +502,7 @@ class HLSSpliceVod {
       if (this.bumperDuration) {
         offset = this.bumperDuration + offset;
       }
-
+      let startDate; 
       let extraAttrs = "";
       if (opts) {
         if (opts.resumeOffset !== undefined) {
@@ -480,6 +513,31 @@ class HLSSpliceVod {
         }
         if (opts.snap === "IN" || opts.snap === "OUT") {
           extraAttrs += `,X-SNAP="${opts.snap}"`;
+        }
+        if (opts.restrict !== undefined) {
+          if (opts.restrict.includes("SKIP") || opts.restrict.includes("JUMP")) {
+            extraAttrs += `,X-RESTRICT="${opts.restrict}"`;
+          }
+        }
+        if (opts.contentmayvary === "YES" || opts.contentmayvary === "NO") {
+          extraAttrs += `,X-CONTENT-MAY-VARY="${opts.contentmayvary}"`;
+        }
+        if (opts.timelineoccupies === "POINT" || opts.timelineoccupies === "RANGE") {
+          extraAttrs += `,X-TIMELINE-OCCUPIES="${opts.timelineoccupies}"`;
+        }
+        if (opts.timelinestyle === "HIGHLIGHT" || opts.timelinestyle === "PRIMARY") {
+          extraAttrs += `,X-TIMELINE-STYLE="${opts.timelinestyle}"`;
+        }
+        if (opts.custombeacon !== undefined) {
+          let custombeacon = "";
+          if (opts.custombeacon.includes("%")) {
+            custombeacon = decodeURIComponent(opts.custombeacon);
+          } else {
+            custombeacon = opts.custombeacon;
+          }
+          if (custombeacon.charAt(0) === "X") {
+            extraAttrs += `,${custombeacon}`;
+          }
         }
       }
 
@@ -492,9 +550,11 @@ class HLSSpliceVod {
         while (pos < offset && i < this.playlists[bw].items.PlaylistItem.length) {
           const plItem = this.playlists[bw].items.PlaylistItem[i];
           pos += plItem.get("duration") * 1000;
-          i++;
+          if (pos <= offset) {
+            i++;
+          }
         }
-        let startDate = new Date(1 + offset).toISOString();
+        startDate = new Date(1 + Number(offset)).toISOString();
         let durationTag = "";
         if (opts && opts.plannedDuration) {
           durationTag = `,DURATION=${opts.plannedDuration / 1000}`;
@@ -512,11 +572,9 @@ class HLSSpliceVod {
         }
       }
 
-      let plannedDuration = (opts && opts.plannedDuration) ? opts.plannedDuration : 0;
+      this._insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, startDate, this.playlistsAudio, opts);
 
-      this._insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, plannedDuration, this.playlistsAudio)
-
-      this._insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, plannedDuration, this.playlistsSubtitle)
+      this._insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, startDate, this.playlistsSubtitle, opts);
 
       resolve();
     });
@@ -585,9 +643,9 @@ class HLSSpliceVod {
             this.playlists[bw].set("targetDuration", this.targetDuration);
           }
 
-          this._insertBumperExtraMedia(this.playlistsAudio, bumper.playlistAudio, this.targetDurationAudio)
+          this._insertBumperExtraMedia(this.playlistsAudio, bumper.playlistAudio, this.targetDurationAudio);
 
-          this._insertBumperExtraMedia(this.playlistsSubtitle, bumper.playlistSubtitle, this.targetDurationSubtitle)
+          this._insertBumperExtraMedia(this.playlistsSubtitle, bumper.playlistSubtitle, this.targetDurationSubtitle);
 
           resolve();
         })
@@ -901,7 +959,7 @@ class HLSSpliceVod {
           this.targetDurationSubtitle = targetDuration;
         }
         this.playlistsSubtitle[group][lang].set("targetDuration", this.targetDurationSubtitle);
-        
+
         const initSegUri = this._getCmafMapUri(m3u, subtitleManifestUri, this.baseUrl);
         if (initSegUri) {
           if (!this.cmafMapUri.subtitle[group]) {
@@ -925,7 +983,13 @@ class HLSSpliceVod {
     });
   }
 
-  _parseAdMasterManifest(manifestUri, _injectAdMasterManifest, _injectAdMediaManifest, _injectAdAudioManifest, _injectAdSubtitleManifest) {
+  _parseAdMasterManifest(
+    manifestUri,
+    _injectAdMasterManifest,
+    _injectAdMediaManifest,
+    _injectAdAudioManifest,
+    _injectAdSubtitleManifest
+  ) {
     return new Promise((resolve, reject) => {
       let ad = {};
       const parser = m3u8.createStream();

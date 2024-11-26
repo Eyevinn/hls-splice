@@ -1,6 +1,6 @@
 {
   "name": "@eyevinn/hls-splice",
-  "version": "5.0.1",
+  "version": "0.5.1",
   "description": "NPM library to splice HLS VOD",
   "repository": "https://github.com/Eyevinn/hls-splice",
   "main": "index.js",

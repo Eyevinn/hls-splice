@@ -22,6 +22,26 @@ const getDummySubtitleSegmentId = () => {
   return DUMMY_SUBTITLE_COUNT++;
 };
 
+const _parseValidCueValues = (cueStr) => {
+  if (cueStr.includes(",")) {
+    const splitCueVals = cueStr.split(",");
+    if (splitCueVals.length > 0) {
+      const validVals = [];
+      for (let cueVal of splitCueVals) {
+        if (["PRE", "POST", "ONCE"].includes(cueVal)) {
+          validVals.push(cueVal);
+        }
+      }
+      return validVals.join(",");
+    }
+  } else {
+    if (["PRE", "POST", "ONCE"].includes(cueStr)) {
+      return cueStr;
+    }
+  }
+  return null;
+};
+
 const findNearestGroupAndLang = (_group, _language, _playlist) => {
   const groups = Object.keys(_playlist);
   let group = groups[0]; // default
@@ -461,6 +481,14 @@ class HLSSpliceVod {
   }
 
   _insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, startDate, playlists, opts) {
+    let HAS_CUE_ATTR = false;
+    if (opts && opts.cue) {
+      const cueValue = _parseValidCueValues(opts.cue);
+      if (cueValue) {
+        extraAttrs += `,CUE="${cueValue}"`;
+        HAS_CUE_ATTR = true;
+      }
+    }
     const groups = Object.keys(playlists);
     for (let i = 0; i < groups.length; i++) {
       const group = groups[i];
@@ -478,33 +506,70 @@ class HLSSpliceVod {
             idx++;
           }
         }
+        if (HAS_CUE_ATTR) {
+          pos = playlist.items.PlaylistItem.length - 1;
+        }
         let durationTag = "";
         if (opts && opts.plannedDuration) {
           durationTag = `,DURATION=${opts.plannedDuration / 1000}`;
         }
-        if (isAssetList) {
-          playlist.items.PlaylistItem[idx].set(
-            "daterange",
-            `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-LIST="${uri}"${extraAttrs}`
-          );
+
+        if (HAS_CUE_ATTR) {
+          if (isAssetList) {
+            playlist.addPlaylistItem({
+              daterange: `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-LIST="${uri}"${extraAttrs}`,
+            });
+          } else {
+            playlist.addPlaylistItem({
+              daterange: `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-URI="${uri}"${extraAttrs}`,
+            });
+          }
         } else {
-          playlist.items.PlaylistItem[idx].set(
-            "daterange",
-            `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-URI="${uri}"${extraAttrs}`
-          );
+          if (isAssetList) {
+            playlist.items.PlaylistItem[idx].set(
+              "daterange",
+              `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-LIST="${uri}"${extraAttrs}`
+            );
+          } else {
+            playlist.items.PlaylistItem[idx].set(
+              "daterange",
+              `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-URI="${uri}"${extraAttrs}`
+            );
+          }
         }
       }
     }
   }
 
-  insertInterstitialAt(offset, id, uri, isAssetList, opts) {
+  insertInterstitialAt(offset, id, uri, isAssetList, opts={
+    resumeOffset: undefined,
+    playoutLimit: undefined,
+    snap: undefined,
+    restrict: undefined,
+    contentmayvary: undefined,
+    timelineoccupies: undefined,
+    timelinestyle: undefined,
+    custombeacon: undefined,
+    cue: undefined,
+  }) {
+    let HAS_CUE_ATTR = false;
+
     return new Promise((resolve, reject) => {
       if (this.bumperDuration) {
         offset = this.bumperDuration + offset;
       }
-      let startDate; 
+      let startDate;
       let extraAttrs = "";
       if (opts) {
+
+        if (opts.cue) {
+          const cueValue = _parseValidCueValues(opts.cue);
+          if (cueValue) {
+            extraAttrs += `,CUE="${cueValue}"`;
+            HAS_CUE_ATTR = true;
+          }
+        }
+
         if (opts.resumeOffset !== undefined) {
           extraAttrs += `,X-RESUME-OFFSET=${opts.resumeOffset / 1000}`;
         }
@@ -547,34 +612,70 @@ class HLSSpliceVod {
         let pos = 0;
         let i = 0;
         this.playlists[bw].items.PlaylistItem[0].set("date", new Date(1));
-        while (pos < offset && i < this.playlists[bw].items.PlaylistItem.length) {
+        const playlistSize = this.playlists[bw].items.PlaylistItem.length;
+        while (pos < offset && i < playlistSize) {
           const plItem = this.playlists[bw].items.PlaylistItem[i];
           pos += plItem.get("duration") * 1000;
           if (pos <= offset) {
             i++;
           }
         }
+
+        if (HAS_CUE_ATTR) {
+          pos = playlistSize - 1;
+        }
+
         startDate = new Date(1 + Number(offset)).toISOString();
         let durationTag = "";
         if (opts && opts.plannedDuration) {
           durationTag = `,DURATION=${opts.plannedDuration / 1000}`;
         }
         if (isAssetList) {
-          this.playlists[bw].items.PlaylistItem[i].set(
-            "daterange",
-            `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-LIST="${uri}"${extraAttrs}`
-          );
+          if (HAS_CUE_ATTR) {
+            this.playlists[bw].addPlaylistItem({
+              daterange: `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-LIST="${uri}"${extraAttrs}`,
+            });
+          } else {
+            this.playlists[bw].items.PlaylistItem[i].set(
+              "daterange",
+              `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-LIST="${uri}"${extraAttrs}`
+            );
+          }
         } else {
-          this.playlists[bw].items.PlaylistItem[i].set(
-            "daterange",
-            `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-URI="${uri}"${extraAttrs}`
-          );
+          if (HAS_CUE_ATTR) {
+            this.playlists[bw].addPlaylistItem({
+              daterange: `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-URI="${uri}"${extraAttrs}`,
+            });
+          } else {
+            this.playlists[bw].items.PlaylistItem[i].set(
+              "daterange",
+              `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-URI="${uri}"${extraAttrs}`
+            );
+          }
         }
       }
 
-      this._insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, startDate, this.playlistsAudio, opts);
+      this._insertInterstitialAtExtraMedia(
+        offset,
+        id,
+        uri,
+        isAssetList,
+        extraAttrs,
+        startDate,
+        this.playlistsAudio,
+        opts
+      );
 
-      this._insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, startDate, this.playlistsSubtitle, opts);
+      this._insertInterstitialAtExtraMedia(
+        offset,
+        id,
+        uri,
+        isAssetList,
+        extraAttrs,
+        startDate,
+        this.playlistsSubtitle,
+        opts
+      );
 
       resolve();
     });

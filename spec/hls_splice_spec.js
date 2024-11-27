@@ -1568,7 +1568,6 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
-
         expect(lines[12]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-SNAP="OUT"'
         );

@@ -481,6 +481,7 @@ class HLSSpliceVod {
   }
 
   _insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, startDate, playlists, opts) {
+
     let HAS_CUE_ATTR = false;
     if (opts && opts.cue) {
       const cueValue = _parseValidCueValues(opts.cue);
@@ -489,6 +490,7 @@ class HLSSpliceVod {
         HAS_CUE_ATTR = true;
       }
     }
+
     const groups = Object.keys(playlists);
     for (let i = 0; i < groups.length; i++) {
       const group = groups[i];
@@ -655,27 +657,9 @@ class HLSSpliceVod {
         }
       }
 
-      this._insertInterstitialAtExtraMedia(
-        offset,
-        id,
-        uri,
-        isAssetList,
-        extraAttrs,
-        startDate,
-        this.playlistsAudio,
-        opts
-      );
+      this._insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, startDate, this.playlistsAudio, opts);
 
-      this._insertInterstitialAtExtraMedia(
-        offset,
-        id,
-        uri,
-        isAssetList,
-        extraAttrs,
-        startDate,
-        this.playlistsSubtitle,
-        opts
-      );
+      this._insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, startDate, this.playlistsSubtitle, opts);
 
       resolve();
     });

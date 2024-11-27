@@ -3,7 +3,7 @@ const fs = require("fs");
 
 const ll = (log_lines) => {
   log_lines.map((line, idx) => console.log(line, idx));
-}
+};
 
 describe("HLSSpliceVod", () => {
   let mockMasterManifest;
@@ -498,6 +498,66 @@ describe("HLSSpliceVod", () => {
         const lines = m3u8.split("\n");
         expect(lines[12]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET=10.5'
+        );
+        done();
+      });
+  });
+
+  it("can insert interstitial with an asset uri and a resume offset and CUE attribute", (done) => {
+    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
+    mockVod
+      .load(mockMasterManifest, mockMediaManifest)
+      .then(() => {
+        return mockVod.insertInterstitialAt(18000, "001", "http://mock.com/asseturi", false, {
+          resumeOffset: 10500,
+          cue: "PRE,ONCE",
+        });
+      })
+      .then(() => {
+        const m3u8 = mockVod.getMediaManifest(4497000);
+        const lines = m3u8.split("\n");
+        expect(lines[29]).toEqual(
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",CUE="PRE,ONCE",X-RESUME-OFFSET=10.5'
+        );
+        done();
+      });
+  });
+
+  it("can insert interstitial with an asset uri and a resume offset and invalid CUE attribute", (done) => {
+    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
+    mockVod
+      .load(mockMasterManifest, mockMediaManifest)
+      .then(() => {
+        return mockVod.insertInterstitialAt(18000, "001", "http://mock.com/asseturi", false, {
+          resumeOffset: 10500,
+          cue: "pre-once",
+        });
+      })
+      .then(() => {
+        const m3u8 = mockVod.getMediaManifest(4497000);
+        const lines = m3u8.split("\n");
+        expect(lines[12]).toEqual(
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET=10.5'
+        );
+        done();
+      });
+  });
+
+  it("can insert interstitial with an asset uri and a resume offset and single CUE attribute", (done) => {
+    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
+    mockVod
+      .load(mockMasterManifest, mockMediaManifest)
+      .then(() => {
+        return mockVod.insertInterstitialAt(18000, "001", "http://mock.com/asseturi", false, {
+          resumeOffset: 10500,
+          cue: "POST",
+        });
+      })
+      .then(() => {
+        const m3u8 = mockVod.getMediaManifest(4497000);
+        const lines = m3u8.split("\n");
+        expect(lines[29]).toEqual(
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",CUE="POST",X-RESUME-OFFSET=10.5'
         );
         done();
       });
@@ -1463,6 +1523,81 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
       });
   });
 
+  it("can insert interstitial with an asset uri and a resume offset and CUE attribute", (done) => {
+    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
+    mockVod
+      .load(mockMasterManifest, mockMediaManifest, mockAudioManifest)
+      .then(() => {
+        return mockVod.insertInterstitialAt(18000, "001", "http://mock.com/asseturi", false, {
+          resumeOffset: 10500,
+          cue: "PRE,ONCE",
+        });
+      })
+      .then(() => {
+        const m3u8 = mockVod.getMediaManifest(4497000);
+        let lines = m3u8.split("\n");
+        expect(lines[29]).toEqual(
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",CUE="PRE,ONCE",X-RESUME-OFFSET=10.5'
+        );
+        const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
+        lines = m3u8Audio.split("\n");
+        expect(lines[29]).toEqual(
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",CUE="PRE,ONCE",X-RESUME-OFFSET=10.5'
+        );
+        done();
+      });
+  });
+
+  it("can insert interstitial with an asset uri and a resume offset and invalid CUE attribute", (done) => {
+    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
+    mockVod
+      .load(mockMasterManifest, mockMediaManifest, mockAudioManifest)
+      .then(() => {
+        return mockVod.insertInterstitialAt(18000, "001", "http://mock.com/asseturi", false, {
+          resumeOffset: 10500,
+          cue: "ROST,TWICE",
+        });
+      })
+      .then(() => {
+        const m3u8 = mockVod.getMediaManifest(4497000);
+        let lines = m3u8.split("\n");
+        expect(lines[12]).toEqual(
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET=10.5'
+        );
+        const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
+        lines = m3u8Audio.split("\n");
+        expect(lines[12]).toEqual(
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-RESUME-OFFSET=10.5'
+        );
+        done();
+      });
+  });
+
+  it("can insert interstitial with an asset uri and a resume offset and partially valid CUE attribute", (done) => {
+    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
+    mockVod
+      .load(mockMasterManifest, mockMediaManifest, mockAudioManifest)
+      .then(() => {
+        return mockVod.insertInterstitialAt(18000, "001", "http://mock.com/asseturi", false, {
+          resumeOffset: 10500,
+          cue: "POST,THRICE",
+        });
+      })
+      .then(() => {
+        const m3u8 = mockVod.getMediaManifest(4497000);
+        let lines = m3u8.split("\n");
+        expect(lines[29]).toEqual(
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",CUE="POST",X-RESUME-OFFSET=10.5'
+        );
+        const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
+        lines = m3u8Audio.split("\n");
+        expect(lines[29]).toEqual(
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",CUE="POST",X-RESUME-OFFSET=10.5'
+        );
+        done();
+      });
+  });
+
   it("can insert interstitial with an asset uri and a resume offset that is 0", (done) => {
     const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
     mockVod
@@ -1547,7 +1682,6 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
-        
         expect(lines[12]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",X-SNAP="OUT"'
         );
@@ -1600,14 +1734,18 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
-        expect(lines[31]).toBe("segment5_0_av.ts")
-        expect(lines[32]).not.toBe("#EXT-X-CUE-IN")
-        expect(lines[33]).not.toBe(`#EXT-X-DATERANGE:ID="1-804",START-DATE="1970-01-01T00:13:24Z",PLANNED-DURATION="0",SCTE35-OUT="0xFC302000000000000000FFF00F05000000017FFFFE000000000000000000007A3D9BBD"`)
+        expect(lines[31]).toBe("segment5_0_av.ts");
+        expect(lines[32]).not.toBe("#EXT-X-CUE-IN");
+        expect(lines[33]).not.toBe(
+          `#EXT-X-DATERANGE:ID="1-804",START-DATE="1970-01-01T00:13:24Z",PLANNED-DURATION="0",SCTE35-OUT="0xFC302000000000000000FFF00F05000000017FFFFE000000000000000000007A3D9BBD"`
+        );
         const m3u8Audio = mockVod.getAudioManifest("stereo", "en");
         lines = m3u8Audio.split("\n");
-        expect(lines[31]).toBe("segment5_sen_a.ts")
-        expect(lines[32]).not.toBe("#EXT-X-CUE-IN")
-        expect(lines[33]).not.toBe(`#EXT-X-DATERANGE:ID="1-804",START-DATE="1970-01-01T00:13:24Z",PLANNED-DURATION="0",SCTE35-OUT="0xFC302000000000000000FFF00F05000000017FFFFE000000000000000000007A3D9BBD"`)
+        expect(lines[31]).toBe("segment5_sen_a.ts");
+        expect(lines[32]).not.toBe("#EXT-X-CUE-IN");
+        expect(lines[33]).not.toBe(
+          `#EXT-X-DATERANGE:ID="1-804",START-DATE="1970-01-01T00:13:24Z",PLANNED-DURATION="0",SCTE35-OUT="0xFC302000000000000000FFF00F05000000017FFFFE000000000000000000007A3D9BBD"`
+        );
         done();
       });
   });
@@ -2015,9 +2153,33 @@ test-audio=256000-6.m4s`;
         );
         const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
         lines = m3u8Audio.split("\n");
-       
         expect(lines[28]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",DURATION=30,X-ASSET-LIST="http://mock.com/asseturi"'
+        );
+        done();
+      });
+  });
+
+  it("can insert interstitial with an asset uri and a resume offset and CUE attribute", (done) => {
+    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
+    mockVod
+      .load(mockCmafMasterManifest, mockCmafMediaManifest, mockCmafAudioManifest)
+      .then(() => {
+        return mockVod.insertInterstitialAt(18000, "001", "http://mock.com/asseturi", false, {
+          resumeOffset: 10500,
+          cue: "POST,ONCE",
+        });
+      })
+      .then(() => {
+        const m3u8 = mockVod.getMediaManifest(4497000);
+        let lines = m3u8.split("\n");
+        expect(lines[129]).toEqual(
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",CUE="POST,ONCE",X-RESUME-OFFSET=10.5'
+        );
+        const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
+        lines = m3u8Audio.split("\n");
+        expect(lines[195]).toEqual(
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",CUE="POST,ONCE",X-RESUME-OFFSET=10.5'
         );
         done();
       });

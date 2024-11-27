@@ -503,7 +503,7 @@ describe("HLSSpliceVod", () => {
       });
   });
 
-  it("can insert interstitial with an asset uri and a resume offset and CUE tag", (done) => {
+  it("can insert interstitial with an asset uri and a resume offset and CUE attribute", (done) => {
     const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
     mockVod
       .load(mockMasterManifest, mockMediaManifest)
@@ -516,7 +516,6 @@ describe("HLSSpliceVod", () => {
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         const lines = m3u8.split("\n");
-        // ll(lines);
         expect(lines[29]).toEqual(
           '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",CUE="PRE,ONCE",X-RESUME-OFFSET=10.5'
         );
@@ -1484,13 +1483,38 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
       });
   });
 
+  it("can insert interstitial with an asset uri and a resume offset and CUE attribute", (done) => {
+    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
+    mockVod
+      .load(mockMasterManifest, mockMediaManifest, mockAudioManifest)
+      .then(() => {
+        return mockVod.insertInterstitialAt(18000, "001", "http://mock.com/asseturi", false, {
+          resumeOffset: 10500,
+                cue: "POST,ONCE"
+        });
+      })
+      .then(() => {
+        const m3u8 = mockVod.getMediaManifest(4497000);
+        let lines = m3u8.split("\n");
+        expect(lines[29]).toEqual(
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",CUE="POST,ONCE",X-RESUME-OFFSET=10.5'
+        );
+        const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
+        lines = m3u8Audio.split("\n");
+        expect(lines[29]).toEqual(
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-URI="http://mock.com/asseturi",CUE="POST,ONCE",X-RESUME-OFFSET=10.5'
+        );
+        done();
+      });
+  });
+
   it("can insert interstitial with an asset uri and a resume offset that is 0", (done) => {
     const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
     mockVod
       .load(mockMasterManifest, mockMediaManifest, mockAudioManifest)
       .then(() => {
         return mockVod.insertInterstitialAt(18000, "001", "http://mock.com/asseturi", false, {
-          resumeOffset: 0,
+          resumeOffset: 0
         });
       })
       .then(() => {

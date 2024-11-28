@@ -482,12 +482,10 @@ class HLSSpliceVod {
 
   _insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, startDate, playlists, opts) {
 
-    let HAS_CUE_ATTR = false;
     if (opts && opts.cue) {
       const cueValue = _parseValidCueValues(opts.cue);
       if (cueValue) {
         extraAttrs += `,CUE="${cueValue}"`;
-        HAS_CUE_ATTR = true;
       }
     }
 
@@ -508,37 +506,22 @@ class HLSSpliceVod {
             idx++;
           }
         }
-        if (HAS_CUE_ATTR) {
-          pos = playlist.items.PlaylistItem.length - 1;
-        }
+
         let durationTag = "";
         if (opts && opts.plannedDuration) {
           durationTag = `,DURATION=${opts.plannedDuration / 1000}`;
         }
 
-        if (HAS_CUE_ATTR) {
-          if (isAssetList) {
-            playlist.addPlaylistItem({
-              daterange: `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-LIST="${uri}"${extraAttrs}`,
-            });
-          } else {
-            playlist.addPlaylistItem({
-              daterange: `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-URI="${uri}"${extraAttrs}`,
-            });
-          }
+        let xAssetAttributeKey;
+        if (isAssetList) {
+          xAssetAttributeKey = "X-ASSET-LIST"; 
         } else {
-          if (isAssetList) {
-            playlist.items.PlaylistItem[idx].set(
-              "daterange",
-              `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-LIST="${uri}"${extraAttrs}`
-            );
-          } else {
-            playlist.items.PlaylistItem[idx].set(
-              "daterange",
-              `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-URI="${uri}"${extraAttrs}`
-            );
-          }
+          xAssetAttributeKey = "X-ASSET-URI";
         }
+        playlist.items.PlaylistItem[idx].set(
+          "daterange",
+          `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},${xAssetAttributeKey}="${uri}"${extraAttrs}`
+        );
       }
     }
   }
@@ -554,7 +537,6 @@ class HLSSpliceVod {
     custombeacon: undefined,
     cue: undefined,
   }) {
-    let HAS_CUE_ATTR = false;
 
     return new Promise((resolve, reject) => {
       if (this.bumperDuration) {
@@ -568,7 +550,6 @@ class HLSSpliceVod {
           const cueValue = _parseValidCueValues(opts.cue);
           if (cueValue) {
             extraAttrs += `,CUE="${cueValue}"`;
-            HAS_CUE_ATTR = true;
           }
         }
 
@@ -623,38 +604,22 @@ class HLSSpliceVod {
           }
         }
 
-        if (HAS_CUE_ATTR) {
-          pos = playlistSize - 1;
-        }
-
         startDate = new Date(1 + Number(offset)).toISOString();
         let durationTag = "";
         if (opts && opts.plannedDuration) {
           durationTag = `,DURATION=${opts.plannedDuration / 1000}`;
         }
+
+        let xAssetAttributeKey;
         if (isAssetList) {
-          if (HAS_CUE_ATTR) {
-            this.playlists[bw].addPlaylistItem({
-              daterange: `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-LIST="${uri}"${extraAttrs}`,
-            });
-          } else {
-            this.playlists[bw].items.PlaylistItem[i].set(
-              "daterange",
-              `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-LIST="${uri}"${extraAttrs}`
-            );
-          }
+          xAssetAttributeKey = "X-ASSET-LIST"; 
         } else {
-          if (HAS_CUE_ATTR) {
-            this.playlists[bw].addPlaylistItem({
-              daterange: `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-URI="${uri}"${extraAttrs}`,
-            });
-          } else {
-            this.playlists[bw].items.PlaylistItem[i].set(
-              "daterange",
-              `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},X-ASSET-URI="${uri}"${extraAttrs}`
-            );
-          }
+          xAssetAttributeKey = "X-ASSET-URI";
         }
+        this.playlists[bw].items.PlaylistItem[i].set(
+          "daterange",
+          `ID=${id},CLASS="com.apple.hls.interstitial",START-DATE="${startDate}"${durationTag},${xAssetAttributeKey}="${uri}"${extraAttrs}`
+        );
       }
 
       this._insertInterstitialAtExtraMedia(offset, id, uri, isAssetList, extraAttrs, startDate, this.playlistsAudio, opts);

@@ -526,7 +526,7 @@ class HLSSpliceVod {
     }
   }
 
-  insertInterstitialAt(offset, id, uri, isAssetList, opts={
+  insertInterstitialAt(offset, id, uri, isAssetList, timeoffset, opts={
     resumeOffset: undefined,
     playoutLimit: undefined,
     snap: undefined,
@@ -596,15 +596,22 @@ class HLSSpliceVod {
         let i = 0;
         this.playlists[bw].items.PlaylistItem[0].set("date", new Date(1));
         const playlistSize = this.playlists[bw].items.PlaylistItem.length;
+        let segmentDurationAtPos = 0;
+        let total_duration = 0;
+
         while (pos < offset && i < playlistSize) {
           const plItem = this.playlists[bw].items.PlaylistItem[i];
+          total_duration = total_duration + plItem.get("duration");
           pos += plItem.get("duration") * 1000;
           if (pos <= offset) {
             i++;
+            segmentDurationAtPos = plItem.get("duration") * 1000;
           }
         }
+        const deltaOffest = pos - offset; // delta between actual offset and the target offset
+        const dateInMs = 1 + Number(offset) + timeoffset + segmentDurationAtPos - deltaOffest;
+        startDate = new Date(dateInMs).toISOString();
 
-        startDate = new Date(1 + Number(offset)).toISOString();
         let durationTag = "";
         if (opts && opts.plannedDuration) {
           durationTag = `,DURATION=${opts.plannedDuration / 1000}`;
@@ -612,7 +619,7 @@ class HLSSpliceVod {
 
         let xAssetAttributeKey;
         if (isAssetList) {
-          xAssetAttributeKey = "X-ASSET-LIST"; 
+          xAssetAttributeKey = "X-ASSET-LIST";
         } else {
           xAssetAttributeKey = "X-ASSET-URI";
         }

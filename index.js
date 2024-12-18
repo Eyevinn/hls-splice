@@ -526,7 +526,7 @@ class HLSSpliceVod {
     }
   }
 
-  insertInterstitialAt(offset, id, uri, isAssetList, timeoffset, opts={
+  insertInterstitialAt(offset, id, uri, isAssetList, opts={
     resumeOffset: undefined,
     playoutLimit: undefined,
     snap: undefined,
@@ -536,6 +536,8 @@ class HLSSpliceVod {
     timelinestyle: undefined,
     custombeacon: undefined,
     cue: undefined,
+    previousBreakDuration: 0,
+    addDeltaOffset: false,
   }) {
 
     return new Promise((resolve, reject) => {
@@ -544,8 +546,11 @@ class HLSSpliceVod {
       }
       let startDate;
       let extraAttrs = "";
+      let prevBreakOffset = 0;
       if (opts) {
-
+        if (opts.previousBreakDuration) {
+          prevBreakOffset = opts.previousBreakDuration;
+        }
         if (opts.cue) {
           const cueValue = _parseValidCueValues(opts.cue);
           if (cueValue) {
@@ -596,20 +601,22 @@ class HLSSpliceVod {
         let i = 0;
         this.playlists[bw].items.PlaylistItem[0].set("date", new Date(1));
         const playlistSize = this.playlists[bw].items.PlaylistItem.length;
-        let segmentDurationAtPos = 0;
         let total_duration = 0;
 
-        while (pos < offset && i < playlistSize) {
+        while (pos <= offset && i < playlistSize) {
           const plItem = this.playlists[bw].items.PlaylistItem[i];
           total_duration = total_duration + plItem.get("duration");
           pos += plItem.get("duration") * 1000;
           if (pos <= offset) {
             i++;
-            segmentDurationAtPos = plItem.get("duration") * 1000;
           }
         }
-        const deltaOffest = pos - offset; // delta between actual offset and the target offset
-        const dateInMs = 1 + Number(offset) + timeoffset + segmentDurationAtPos - deltaOffest;
+        let dateInMs = 1 + Number(offset) + prevBreakOffset;
+        if (opts && opts.addDeltaOffset) {
+          // delta between actual offset and the target offset
+          dateInMs += (pos - offset);
+        }
+        dateInMs = dateInMs < 0 ? 1 : dateInMs;
         startDate = new Date(dateInMs).toISOString();
 
         let durationTag = "";

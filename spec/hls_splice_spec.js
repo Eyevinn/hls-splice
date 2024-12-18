@@ -1460,18 +1460,18 @@ describe("HLSSpliceVod with Demuxed Audio Tracks,", () => {
     mockVod
       .load(mockMasterManifest, mockMediaManifest, mockAudioManifest)
       .then(() => {
-        return mockVod.insertInterstitialAt(16000, "001", "/assetlist/sdfsdfjlsdfsdf", true);
+        return mockVod.insertInterstitialAt(16000, "001", "/assetlist/sdfsdfjlsdfsdf", true, { addDeltaOffset: true });
       })
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
         let lines = m3u8.split("\n");
         expect(lines[10]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:16.001Z",X-ASSET-LIST="/assetlist/sdfsdfjlsdfsdf"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-LIST="/assetlist/sdfsdfjlsdfsdf"'
         );
         const m3u8Audio = mockVod.getAudioManifest("stereo", "sv");
         lines = m3u8Audio.split("\n");
         expect(lines[10]).toEqual(
-          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:16.001Z",X-ASSET-LIST="/assetlist/sdfsdfjlsdfsdf"'
+          '#EXT-X-DATERANGE:ID="001",CLASS="com.apple.hls.interstitial",START-DATE="1970-01-01T00:00:18.001Z",X-ASSET-LIST="/assetlist/sdfsdfjlsdfsdf"'
         );
         done();
       });

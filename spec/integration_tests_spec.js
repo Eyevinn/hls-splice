@@ -73,18 +73,20 @@ describe("HLSSpliceVod", () => {
       .then(() => {
         const mediaManifest = hlsVod.getMediaManifest(455000);
         const lines = mediaManifest.split("\n");
-        expect(lines[8]).toEqual(
-          `#EXT-X-MAP:URI="https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/hls/output-video=300000.m4s"`
-        );
-        expect(lines[12]).toEqual(
-          `https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/hls/output-video=300000-1.m4s`
-        );
-        expect(lines[23]).toEqual(
-          `#EXT-X-MAP:URI="https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/hls/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-video=300000.m4s"`
-        );
-        expect(lines[28]).toEqual(
-          `https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/hls/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-video=300000-1.m4s`
-        );
+
+        expect(lines[8]).toEqual(`#EXT-X-DISCONTINUITY`);
+        expect(lines[9]).toEqual(`#EXT-X-CUE-OUT:DURATION=20`);
+        expect(lines[10]).toEqual(`#EXT-X-MAP:URI="https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/hls/output-video=300000.m4s"`);
+        expect(lines[11]).toEqual(`#EXTINF:3.8400, no desc`);
+        expect(lines[12]).toEqual(`https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/hls/output-video=300000-1.m4s`);
+
+        expect(lines[23]).toEqual(`#EXT-X-DISCONTINUITY`);  
+        expect(lines[24]).toEqual(`#EXT-X-CUE-IN`);
+        expect(lines[25]).toEqual(`#EXT-X-PROGRAM-DATE-TIME:1970-01-01T00:00:00Z`);
+        expect(lines[26]).toEqual(`#EXT-X-MAP:URI="https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/hls/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-video=300000.m4s"`);
+        expect(lines[27]).toEqual(`#EXTINF:4.0000, no desc`);
+        expect(lines[28]).toEqual(`https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/hls/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-video=300000-1.m4s`);
+        
         done();
       });
   });
@@ -114,18 +116,18 @@ describe("HLSSpliceVod", () => {
       .then(() => {
         const audioManifest = hlsVod.getAudioManifest("audio-aacl-128", "audio");
         const lines = audioManifest.split("\n");
-        expect(lines[8]).toEqual(
-          `#EXT-X-MAP:URI="https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/hls/output-audio=128000.m4s"`
-        );
-        expect(lines[12]).toEqual(
-          `https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/hls/output-audio=128000-1.m4s`
-        );
-        expect(lines[23]).toEqual(
-          `#EXT-X-MAP:URI="https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/hls/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-audio=128000.m4s"`
-        );
-        expect(lines[28]).toEqual(
-          `https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/hls/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-audio=128000-1.m4s`
-        );
+        expect(lines[8]).toEqual(`#EXT-X-DISCONTINUITY`);
+        expect(lines[9]).toEqual(`#EXT-X-CUE-OUT:DURATION=20.032`);
+        expect(lines[10]).toEqual(`#EXT-X-MAP:URI="https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/hls/output-audio=128000.m4s"`);
+        expect(lines[12]).toEqual(`https://ovpuspvod.a2d-stage.tv/trailers/63ef9c36e3ffa90028603374/output.ism/hls/output-audio=128000-1.m4s`);
+
+        expect(lines[23]).toEqual(`#EXT-X-DISCONTINUITY`);
+        expect(lines[24]).toEqual(`#EXT-X-CUE-IN`);
+        expect(lines[25]).toEqual(`#EXT-X-PROGRAM-DATE-TIME:1970-01-01T00:00:00Z`);
+        expect(lines[26]).toEqual(`#EXT-X-MAP:URI="https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/hls/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-audio=128000.m4s"`);
+        expect(lines[27]).toEqual(`#EXTINF:3.8400, no desc`);
+        expect(lines[28]).toEqual(`https://vod.streaming.a2d.tv/948a9dc4-ccb6-4de0-8295-40909bc90e43/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478.ism/hls/c70657d0-5fe3-11ed-9d66-430eb269fe23_20331478-audio=128000-1.m4s`);
+
         done();
       });
   });

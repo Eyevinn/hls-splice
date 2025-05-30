@@ -1,6 +1,10 @@
 const HLSSpliceVod = require("../index.js");
 const fs = require("fs");
 
+const ll = (log_lines) => {
+  log_lines.map((line, idx) => console.log(line, idx));
+};
+
 describe("HLSSpliceVod with subs", () => {
   let mockMasterManifestSubs;
   let mockMediaManifestSubs;
@@ -51,7 +55,7 @@ describe("HLSSpliceVod with subs", () => {
     mockVod
       .load(mockMasterManifestSubs, mockMediaManifestSubs, null, mockSubtitleManifestSubs)
       .then(() => {
-        return mockVod.insertAdAt(12000, "http://mock.com/ad/mockad.m3u8", mockAdMasterManifestSubs, mockAdMediaManifestSubs, null, mockAdSubtitleManifestSubs);
+        return mockVod.insertAdAt(12000, "http://mock.com/ad/mockad.m3u8", null, mockAdMasterManifestSubs, mockAdMediaManifestSubs, null, mockAdSubtitleManifestSubs);
       })
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(3370400);
@@ -79,7 +83,7 @@ describe("HLSSpliceVod with subs", () => {
     mockVod
       .load(mockMasterManifestSubs, mockMediaManifestSubs, null, mockSubtitleManifestSubs)
       .then(() => {
-        return mockVod.insertAdAt(12000, "http://mock.com/ad/mockad.m3u8", mockAdMasterManifestNoSubs, mockAdMediaManifestNoSubs);
+        return mockVod.insertAdAt(12000, "http://mock.com/ad/mockad.m3u8", null, mockAdMasterManifestNoSubs, mockAdMediaManifestNoSubs);
       })
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(3370400);
@@ -106,7 +110,7 @@ describe("HLSSpliceVod with subs", () => {
     mockVod
       .load(mockMasterManifestNoSubs, mockMediaManifestNoSubs)
       .then(() => {
-        return mockVod.insertAdAt(9000, "http://mock.com/ad/mockad.m3u8", mockAdMasterManifestSubs, mockAdMediaManifestSubs, null, mockAdSubtitleManifestSubs);
+        return mockVod.insertAdAt(9000, "http://mock.com/ad/mockad.m3u8", null, mockAdMasterManifestSubs, mockAdMediaManifestSubs, null, mockAdSubtitleManifestSubs);
       })
       .then(() => {
         const m3u8 = mockVod.getMediaManifest(4497000);
@@ -125,7 +129,6 @@ describe("HLSSpliceVod with subs", () => {
         done();
       });
   });
-
 
   it("insert Interstitial at 8 sec", (done) => {
     const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8");
@@ -165,11 +168,18 @@ describe("HLSSpliceVod with subs", () => {
         let substrings = m3u8.split("\n")
         const m3u8Subs = mockVod.getSubtitleManifest("subs", "fr");
         let substringsSubs = m3u8Subs.split("\n")
-        expect(substrings[7]).toBe("http://mock.com/ad/ad00.ts");
-        expect(substrings[10]).toBe("#EXT-X-DISCONTINUITY");
 
-        expect(substringsSubs[6]).toBe("http://mock.com/ad/ad0.webvtt");
-        expect(substringsSubs[9]).toBe("#EXT-X-DISCONTINUITY"); 
+        expect(substrings[8]).toBe("#EXTINF:4.0000,");
+        expect(substrings[9]).toBe("http://mock.com/ad/ad01.ts");
+        expect(substrings[10]).toBe("#EXT-X-DISCONTINUITY");
+        expect(substrings[11]).toBe("#EXTINF:4.0000,");
+        expect(substrings[12]).toBe("seg-00.ts");
+
+        expect(substringsSubs[7]).toBe("#EXTINF:4.0000,");
+        expect(substringsSubs[8]).toBe("http://mock.com/ad/ad1.webvtt");
+        expect(substringsSubs[9]).toBe("#EXT-X-DISCONTINUITY");
+        expect(substringsSubs[10]).toBe("#EXTINF:4.0000,");
+        expect(substringsSubs[11]).toBe("0.webvtt");
         done();
       });
   });
@@ -190,11 +200,18 @@ describe("HLSSpliceVod with subs", () => {
         let substrings = m3u8.split("\n")
         const m3u8Subs = mockVod.getSubtitleManifest("subs", "fr");
         let substringsSubs = m3u8Subs.split("\n")
-        expect(substrings[7]).toBe("http://mock.com/ad/ad1_0_av.ts");
-        expect(substrings[16]).toBe("#EXT-X-DISCONTINUITY");
 
-        expect(substringsSubs[6]).toContain("/dummy?id=");
-        expect(substringsSubs[15]).toBe("#EXT-X-DISCONTINUITY");
+       expect(substrings[14]).toBe("#EXTINF:3.0000,");
+       expect(substrings[15]).toBe("http://mock.com/ad/ad5_0_av.ts");
+       expect(substrings[16]).toBe("#EXT-X-DISCONTINUITY");
+       expect(substrings[17]).toBe("#EXTINF:4.0000,");
+       expect(substrings[18]).toBe("seg-00.ts");
+
+       expect(substringsSubs[14]).toContain("/dummy?id=");
+       expect(substringsSubs[15]).toBe("#EXT-X-DISCONTINUITY");
+       expect(substringsSubs[16]).toBe("#EXTINF:4.0000,");
+       expect(substringsSubs[17]).toBe("0.webvtt");
+       
         done();
       });
   });

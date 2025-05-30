@@ -298,7 +298,7 @@ class HLSSpliceVod {
     return [subtitleItems, duration];
   }
 
-  _insertAdAtExtraMedia(startOffset, offset, playlists, adPlaylists, targetDuration, adDuration, isPostRoll) {
+  _insertAdAtExtraMedia(startOffset, offset, playlists, adPlaylists, targetDuration, adDuration, isPostRoll, adType = "ad") {
     let groups = Object.keys(playlists);
     if (isPostRoll) {
       let duration = 0;
@@ -341,13 +341,17 @@ class HLSSpliceVod {
           playlist.items.PlaylistItem.splice(idx + j, 0, adPlaylist.items.PlaylistItem[j]);
         }
         playlist.items.PlaylistItem[idx].set("discontinuity", true);
-        playlist.items.PlaylistItem[idx].set("cueout", adDuration);
-        if (insertCueIn) {
-          playlist.items.PlaylistItem[idx].set("cuein", true);
+        if (adType === "ad") {
+          playlist.items.PlaylistItem[idx].set("cueout", adDuration);
+          if (insertCueIn) {
+            playlist.items.PlaylistItem[idx].set("cuein", true);
+          }
         }
 
         if (playlist.items.PlaylistItem[idx + adLength]) {
-          playlist.items.PlaylistItem[idx + adLength].set("cuein", true);
+          if (adType === "ad") {
+            playlist.items.PlaylistItem[idx + adLength].set("cuein", true);
+          }
           if (!isPostRoll) {
             playlist.items.PlaylistItem[idx + adLength].set("discontinuity", true);
           }
@@ -355,7 +359,9 @@ class HLSSpliceVod {
             playlist.items.PlaylistItem[idx + adLength].set("map-uri", closestCmafMapUri);
           }
         } else {
-          playlist.addPlaylistItem({ cuein: true });
+          if (adType === "ad") {
+            playlist.addPlaylistItem({ cuein: true });
+          }
         }
         playlist.set("targetDuration", targetDuration);
       }
@@ -365,11 +371,13 @@ class HLSSpliceVod {
   insertAdAt(
     offset,
     adMasterManifestUri,
+    adType,
     _injectAdMasterManifest,
     _injectAdMediaManifest,
     _injectAdAudioManifest,
     _injectAdSubtitleManifest
   ) {
+    adType = adType || "ad";
     this.ad = {};
     return new Promise((resolve, reject) => {
       this._parseAdMasterManifest(
@@ -406,6 +414,7 @@ class HLSSpliceVod {
               offset = this.bumperDuration + offset;
             }
           }
+          
           for (let b = 0; b < bandwidths.length; b++) {
             const bw = bandwidths[b];
             const targetAdBw = findNearestBw(bw, Object.keys(ad.playlist));
@@ -422,22 +431,34 @@ class HLSSpliceVod {
               pos += plItem.get("duration") * 1000;
               i++;
             }
+
             let insertCueIn = false;
             if (this.playlists[bw].items.PlaylistItem[this.playlists[bw].items.PlaylistItem.length - 1].get("cuein")) {
               insertCueIn = true;
             }
             const adLength = adPlaylist.items.PlaylistItem.length;
-            if (this.playlists[bw].items.PlaylistItem[0])
+            if (this.playlists[bw].items.PlaylistItem[0]){
               for (let j = 0; j < adLength; j++) {
                 this.playlists[bw].items.PlaylistItem.splice(i + j, 0, adPlaylist.items.PlaylistItem[j]);
               }
-            this.playlists[bw].items.PlaylistItem[i].set("discontinuity", true);
-            this.playlists[bw].items.PlaylistItem[i].set("cueout", ad.duration);
-            if (insertCueIn) {
-              this.playlists[bw].items.PlaylistItem[i].set("cuein", true);
             }
+
+            this.playlists[bw].items.PlaylistItem[i].set("discontinuity", true);
+
+            if (adType === "ad") {
+              this.playlists[bw].items.PlaylistItem[i].set("cueout", ad.duration);
+              if (insertCueIn) {
+                this.playlists[bw].items.PlaylistItem[i].set("cuein", true);
+              }
+            } else {
+              this.playlists[bw].items.PlaylistItem[i].set("cueout", null);
+            }
+
+
             if (this.playlists[bw].items.PlaylistItem[i + adLength]) {
-              this.playlists[bw].items.PlaylistItem[i + adLength].set("cuein", true);
+              if (adType === "ad") {
+                this.playlists[bw].items.PlaylistItem[i + adLength].set("cuein", true);
+              }
               if (!isPostRoll) {
                 this.playlists[bw].items.PlaylistItem[i + adLength].set("discontinuity", true);
               }
@@ -449,6 +470,7 @@ class HLSSpliceVod {
             }
             this.playlists[bw].set("targetDuration", this.targetDuration);
           }
+
           const audioGroups = Object.keys(this.playlistsAudio);
           const adAudioGroups = Object.keys(ad.playlistAudio);
           if (audioGroups.length > 0 && adAudioGroups.length > 0) {
@@ -459,7 +481,8 @@ class HLSSpliceVod {
               ad.playlistAudio,
               this.targetDurationAudio,
               ad.durationAudio,
-              isPostRoll
+              isPostRoll,
+              adType
             );
           }
 
@@ -471,7 +494,8 @@ class HLSSpliceVod {
               ad.playlistSubtitle,
               this.targetDurationSubtitle,
               ad.durationSubtile,
-              isPostRoll
+              isPostRoll,
+              adType
             );
           }
           resolve();

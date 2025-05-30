@@ -1,0 +1,11 @@
+#EXTM3U
+#EXT-X-VERSION:6
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-MEDIA-SEQUENCE:1
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-TARGETDURATION:5
+#EXTINF:5, no desc
+short_vod/textstream_1-1.vtt
+#EXTINF:5, no desc
+short_vod/textstream_1-2.vtt
+#EXT-X-ENDLIST

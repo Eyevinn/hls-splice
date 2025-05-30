@@ -1,0 +1,48 @@
+#EXTM3U
+#EXT-X-VERSION:6
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-MEDIA-SEQUENCE:1
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-TARGETDURATION:3
+#EXT-X-MAP:URI="audio_1.m4a"
+#EXTINF:3, no desc
+audio_1-1.m4s               
+#EXTINF:3, no desc
+audio_1-2.m4s
+#EXTINF:3, no desc
+audio_1-3.m4s
+#EXTINF:3, no desc
+audio_1-4.m4s
+#EXTINF:3, no desc
+audio_1-5.m4s
+#EXTINF:3, no desc
+audio_1-6.m4s
+#EXTINF:3, no desc
+audio_1-7.m4s
+#EXTINF:3, no desc
+audio_1-8.m4s
+#EXTINF:3, no desc
+audio_1-9.m4s
+#EXTINF:3, no desc
+audio_1-10.m4s
+#EXTINF:3, no desc
+audio_1-11.m4s
+#EXTINF:3, no desc
+audio_1-12.m4s
+#EXTINF:3, no desc
+audio_1-13.m4s
+#EXTINF:3, no desc
+audio_1-14.m4s
+#EXTINF:3, no desc
+audio_1-15.m4s
+#EXTINF:3, no desc
+audio_1-16.m4s
+#EXTINF:3, no desc
+audio_1-17.m4s
+#EXTINF:3, no desc
+audio_1-18.m4s
+#EXTINF:3, no desc
+audio_1-19.m4s
+#EXTINF:3, no desc
+audio_1-20.m4s
+#EXT-X-ENDLIST

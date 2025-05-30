@@ -133,12 +133,14 @@ class HLSSpliceVod {
   load(): Promise<void>
   /**
    * Insert ad located at `adMasterManifestUri` at position `offset` (milliseconds)
+   * `adType` can be `segment` or `ad`, default is `ad`, if the ad type is `segment`
+   * then it will not flagged as an ad in the output manifest
    */
-  insertAdAt(offset: number, adMasterManifesturi: string): Promise<void>
+  insertAdAt(offset: number, adMasterManifesturi: string, adType: string = 'segment'|'ad'): Promise<void>
   /**
    * Insert pre-roll bumper located at `bumperManifestUri` (not flagged as an ad)
    */
-  insertBumper(bumperManifestUri: string): Promise<void>
+  insertBumper(bumperManifestUri: string): Promise<void> // deprecated, use insertAdAt with adType set to `segment` instead
   /**
    * Insert an ad opportunity according to interstitial DATERANGE schema at position `offset` (milliseconds)
    */

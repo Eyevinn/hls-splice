@@ -1,0 +1,16 @@
+#EXTM3U
+#EXT-X-VERSION:6
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-MEDIA-SEQUENCE:1
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-TARGETDURATION:3
+#EXT-X-MAP:URI="ad/audio_1.m4a"
+#EXTINF:3, no desc
+ad/audio_1-1.m4s
+#EXTINF:3, no desc
+ad/audio_1-2.m4s
+#EXTINF:3, no desc
+ad/audio_1-3.m4s
+#EXTINF:3, no desc
+ad/audio_1-4.m4s
+#EXT-X-ENDLIST

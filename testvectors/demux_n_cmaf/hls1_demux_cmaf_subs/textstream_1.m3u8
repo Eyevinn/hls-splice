@@ -1,0 +1,47 @@
+#EXTM3U
+#EXT-X-VERSION:6
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-MEDIA-SEQUENCE:1
+#EXT-X-INDEPENDENT-SEGMENTS
+#EXT-X-TARGETDURATION:3
+#EXTINF:3, no desc
+textstream_1-1.vtt
+#EXTINF:3, no desc
+textstream_1-2.vtt
+#EXTINF:3, no desc
+textstream_1-3.vtt
+#EXTINF:3, no desc
+textstream_1-4.vtt
+#EXTINF:3, no desc
+textstream_1-5.vtt
+#EXTINF:3, no desc
+textstream_1-6.vtt
+#EXTINF:3, no desc
+textstream_1-7.vtt
+#EXTINF:3, no desc
+textstream_1-8.vtt
+#EXTINF:3, no desc
+textstream_1-9.vtt
+#EXTINF:3, no desc
+textstream_1-10.vtt
+#EXTINF:3, no desc
+textstream_1-11.vtt
+#EXTINF:3, no desc
+textstream_1-12.vtt
+#EXTINF:3, no desc
+textstream_1-13.vtt
+#EXTINF:3, no desc
+textstream_1-14.vtt
+#EXTINF:3, no desc
+textstream_1-15.vtt
+#EXTINF:3, no desc
+textstream_1-16.vtt
+#EXTINF:3, no desc
+textstream_1-17.vtt
+#EXTINF:3, no desc
+textstream_1-18.vtt
+#EXTINF:3, no desc
+textstream_1-19.vtt
+#EXTINF:3, no desc
+textstream_1-20.vtt
+#EXT-X-ENDLIST

@@ -111,6 +111,9 @@ class HLSSpliceVod {
     if (options && options.dummySubtitleEndpoint) {
       this.dummySubtitleEndpoint = options.dummySubtitleEndpoint;
     }
+    if (options && options.neverInsertAdAfterDesiredPosition) {
+      this.neverInsertAdAfterDesiredPosition = options.neverInsertAdAfterDesiredPosition;
+    }
 
     this.cmafMapUri = { video: {}, audio: {}, subtitle: {} };
   }
@@ -427,6 +430,12 @@ class HLSSpliceVod {
               const plItem = this.playlists[bw].items.PlaylistItem[i];
               if (plItem.get("map-uri")) {
                 closestCmafMapUri = this._getCmafMapUri(this.playlists[bw], this.masterManifestUri, this.baseUrl, i);
+              }
+              // Check if i were to add the next item, would it be greater than offset? Cuz then I don't want to add it
+              const potentialPos = pos + plItem.get("duration") * 1000;
+              // if potentialPos is greater than 0.050 seconds from offset, then we don't want to add it
+              if (potentialPos > offset + 50 && this.neverInsertAdAfterDesiredPosition) {
+                break;
               }
               pos += plItem.get("duration") * 1000;
               i++;

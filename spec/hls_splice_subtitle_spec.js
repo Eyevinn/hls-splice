@@ -255,7 +255,7 @@ describe("HLSSpliceVod with subs", () => {
 
   
   it("insert VOD, on vod with very different segments lengths on video and audio tracks", (done) => {
-    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8", { dummySubtitleEndpoint: "/dummy", mergeAds: true, neverInsertAdAfterDesiredPosition: true });
+    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8", { dummySubtitleEndpoint: "/dummy", mergeAds: true });
     mockVod
       .load(mockMasterManifestSubs2, mockMediaManifestSubs2, mockAudioManifestSubs2, mockSubtitleManifestSubs2)
       .then(() => {

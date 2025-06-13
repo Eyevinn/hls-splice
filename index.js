@@ -394,6 +394,7 @@ class HLSSpliceVod {
           const isPostRoll = offset == -1;
           const bandwidths = Object.keys(this.playlists);
           let closestCmafMapUri = "";
+          let videosPos = 0;
 
           const adSubtitleGroups = Object.keys(ad.playlistSubtitle);
           const subtitleGroups = Object.keys(this.playlistsSubtitle);
@@ -414,7 +415,7 @@ class HLSSpliceVod {
               offset = this.bumperDuration + offset;
             }
           }
-          
+
           for (let b = 0; b < bandwidths.length; b++) {
             const bw = bandwidths[b];
             const targetAdBw = findNearestBw(bw, Object.keys(ad.playlist));
@@ -428,8 +429,21 @@ class HLSSpliceVod {
               if (plItem.get("map-uri")) {
                 closestCmafMapUri = this._getCmafMapUri(this.playlists[bw], this.masterManifestUri, this.baseUrl, i);
               }
+              const potentialPos = pos + plItem.get("duration") * 1000;
+              const potentialPosDiff = potentialPos - offset;
+              if (potentialPosDiff > 0) {
+                const currentPosDiff = Math.abs(pos - offset);
+                if (potentialPosDiff > currentPosDiff) {
+                  break;
+                }
+              }
+
               pos += plItem.get("duration") * 1000;
               i++;
+
+              if (b === 0) {
+                videosPos = pos;
+              }
             }
 
             let insertCueIn = false;
@@ -437,7 +451,7 @@ class HLSSpliceVod {
               insertCueIn = true;
             }
             const adLength = adPlaylist.items.PlaylistItem.length;
-            if (this.playlists[bw].items.PlaylistItem[0]){
+            if (this.playlists[bw].items.PlaylistItem[0]) {
               for (let j = 0; j < adLength; j++) {
                 this.playlists[bw].items.PlaylistItem.splice(i + j, 0, adPlaylist.items.PlaylistItem[j]);
               }
@@ -476,7 +490,7 @@ class HLSSpliceVod {
           if (audioGroups.length > 0 && adAudioGroups.length > 0) {
             this._insertAdAtExtraMedia(
               startOffset,
-              offset,
+              videosPos,
               this.playlistsAudio,
               ad.playlistAudio,
               this.targetDurationAudio,
@@ -489,7 +503,7 @@ class HLSSpliceVod {
           if (subtitleGroups.length > 0) {
             this._insertAdAtExtraMedia(
               startOffset,
-              offset,
+              videosPos,
               this.playlistsSubtitle,
               ad.playlistSubtitle,
               this.targetDurationSubtitle,
@@ -538,7 +552,7 @@ class HLSSpliceVod {
 
         let xAssetAttributeKey;
         if (isAssetList) {
-          xAssetAttributeKey = "X-ASSET-LIST"; 
+          xAssetAttributeKey = "X-ASSET-LIST";
         } else {
           xAssetAttributeKey = "X-ASSET-URI";
         }
@@ -550,7 +564,7 @@ class HLSSpliceVod {
     }
   }
 
-  insertInterstitialAt(offset, id, uri, isAssetList, opts={
+  insertInterstitialAt(offset, id, uri, isAssetList, opts = {
     resumeOffset: undefined,
     playoutLimit: undefined,
     snap: undefined,

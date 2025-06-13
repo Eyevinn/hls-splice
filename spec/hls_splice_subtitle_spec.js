@@ -9,13 +9,26 @@ describe("HLSSpliceVod with subs", () => {
   let mockMasterManifestSubs;
   let mockMediaManifestSubs;
   let mockSubtitleManifestSubs;
+
+  let mockMasterManifestSubs2
+  let mockMediaManifestSubs2
+  let mockSubtitleManifestSubs2
+  let mockAudioManifestSubs2
+
   let mockMasterManifestNoSubs;
   let mockMediaManifestNoSubs;
+
   let mockAdMasterManifestSubs;
   let mockAdMediaManifestSubs;
   let mockAdSubtitleManifestSubs;
+
   let mockAdMasterManifestNoSubs;
   let mockAdMediaManifestNoSubs;
+
+  let mockAdMasterManifestSubs2;
+  let mockAdMediaManifestSubs2;
+  let mockAdSubtitleManifestSubs2;
+  let mockAdAudioManifestSubs2;
 
   beforeEach(() => {
     mockMasterManifestSubs = () => {
@@ -47,6 +60,30 @@ describe("HLSSpliceVod with subs", () => {
     };
     mockAdMediaManifestNoSubs = () => {
       return fs.createReadStream("testvectors/ad1/index_0_av.m3u8");
+    };
+    mockMasterManifestSubs2 = () => {
+      return fs.createReadStream("testvectors/demux/hls3_v_a_s/master.m3u8");
+    };
+    mockMediaManifestSubs2 = () => {
+      return fs.createReadStream("testvectors/demux/hls3_v_a_s/index_0_v.m3u8");
+    };
+    mockSubtitleManifestSubs2 = () => {
+      return fs.createReadStream("testvectors/demux/hls3_v_a_s/index_sub.m3u8");
+    };
+    mockAudioManifestSubs2 = () => {
+      return fs.createReadStream("testvectors/demux/hls3_v_a_s/index_audio.m3u8");
+    };
+    mockAdMasterManifestSubs2 = () => {
+      return fs.createReadStream("testvectors/demux/ad6/master.m3u8");
+    };
+    mockAdMediaManifestSubs2 = () => {
+      return fs.createReadStream("testvectors/demux/ad6/index_0_v.m3u8");
+    };
+    mockAdSubtitleManifestSubs2 = () => {
+      return fs.createReadStream("testvectors/demux/ad6/index_subs.m3u8");
+    };
+    mockAdAudioManifestSubs2 = () => {
+      return fs.createReadStream("testvectors/demux/ad6/index_audio.m3u8");
     };
   });
 
@@ -211,6 +248,66 @@ describe("HLSSpliceVod with subs", () => {
        expect(substringsSubs[15]).toBe("#EXT-X-DISCONTINUITY");
        expect(substringsSubs[16]).toBe("#EXTINF:4.0000,");
        expect(substringsSubs[17]).toBe("0.webvtt");
+       
+        done();
+      });
+  });
+
+  
+  it("insert VOD, on vod with very different segments lengths on video and audio tracks", (done) => {
+    const mockVod = new HLSSpliceVod("http://mock.com/mock.m3u8", { dummySubtitleEndpoint: "/dummy", mergeAds: true });
+    mockVod
+      .load(mockMasterManifestSubs2, mockMediaManifestSubs2, mockAudioManifestSubs2, mockSubtitleManifestSubs2)
+      .then(() => {
+        return mockVod.insertAdAt(
+          300000,
+          "http://mock.com/ad/mockbumper.m3u8",
+          null,
+          mockAdMasterManifestSubs2,
+          mockAdMediaManifestSubs2,
+          mockAdAudioManifestSubs2,
+          mockAdSubtitleManifestSubs2
+        );
+      })
+      .then(() => {
+        const m3u8Video = mockVod.getMediaManifest(4497000);
+        let linesVideo = m3u8Video.split("\n")
+        let m3u8Audio = mockVod.getAudioManifest("audio", "no");
+        let linesAudio = m3u8Audio.split("\n")
+        const m3u8Subs = mockVod.getSubtitleManifest("subs", "no");
+        let linesSubs = m3u8Subs.split("\n")
+        
+        //linesVideo.forEach((line, idx) => console.log(line, idx));
+        //linesAudio.forEach((line, idx) =>console.log(line, idx));
+
+        const cumulativeDuration = (lines) => {
+          let duration = 0;
+          for (let i = 0; i < lines.length; i++) {
+            let line = lines[i];
+            if (line.includes("#EXTINF:")) {
+              duration += parseFloat(line.split("#EXTINF:")[1].split(",")[0]);
+            }
+            if (line.includes("#EXT-X-CUE-OUT")) {
+              return duration;
+            }
+          }
+          return duration;
+        };
+        
+        const cumulativeDurationVideo = cumulativeDuration(linesVideo);
+        const cumulativeDurationAudio = cumulativeDuration(linesAudio);
+        const cumulativeDurationSubs = cumulativeDuration(linesSubs);
+        //console.log("Video =", cumulativeDurationVideo);
+        //console.log("Audio =", cumulativeDurationAudio);
+        //console.log("Subs =", cumulativeDurationSubs);
+
+        const expectedVideoDuration = 297.35999999999996;
+        const expectedAudioDuration = 300.0660000000001;
+        const expectedSubsDuration = 300;
+
+        expect(cumulativeDurationVideo).toBe(expectedVideoDuration);
+        expect(cumulativeDurationAudio).toBe(expectedAudioDuration);
+        expect(cumulativeDurationSubs).toBe(expectedSubsDuration);
        
         done();
       });

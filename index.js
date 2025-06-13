@@ -434,7 +434,7 @@ class HLSSpliceVod {
               if (potentialPosDiff > 0) {
                 const currentPosDiff = Math.abs(pos - offset);
                 if (potentialPosDiff > currentPosDiff) {
-                  break;
+                  //break;
                 }
               }
 

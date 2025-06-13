@@ -301,9 +301,9 @@ describe("HLSSpliceVod with subs", () => {
         //console.log("Audio =", cumulativeDurationAudio);
         //console.log("Subs =", cumulativeDurationSubs);
 
-        const expectedVideoDuration = 297.35999999999996;
-        const expectedAudioDuration = 300.0660000000001;
-        const expectedSubsDuration = 300;
+        const expectedVideoDuration = 307.35999999999996;
+        const expectedAudioDuration = 312.0770000000001;
+        const expectedSubsDuration = 312;
 
         expect(cumulativeDurationVideo).toBe(expectedVideoDuration);
         expect(cumulativeDurationAudio).toBe(expectedAudioDuration);

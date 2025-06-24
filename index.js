@@ -429,14 +429,6 @@ class HLSSpliceVod {
               if (plItem.get("map-uri")) {
                 closestCmafMapUri = this._getCmafMapUri(this.playlists[bw], this.masterManifestUri, this.baseUrl, i);
               }
-              const potentialPos = pos + plItem.get("duration") * 1000;
-              const potentialPosDiff = potentialPos - offset;
-              if (potentialPosDiff > 0) {
-                const currentPosDiff = Math.abs(pos - offset);
-                if (potentialPosDiff > currentPosDiff) {
-                  //break;
-                }
-              }
 
               pos += plItem.get("duration") * 1000;
               i++;
@@ -762,35 +754,64 @@ class HLSSpliceVod {
   getMediaManifest(bw) {
     try {
       if (this.mergeBreaks) {
-        let adBreakDuration = 0;
-        let itemToUpdate = null;
+        let totalAdDuration = 0;
+        let firstCueoutItem = null;
+        let inAdBreak = false;
+        
         for (let i = 0; i < this.playlists[bw].items.PlaylistItem.length; i++) {
-          if (
-            this.playlists[bw].items.PlaylistItem[i].get("cueout") &&
-            this.playlists[bw].items.PlaylistItem[i].get("cuein")
-          ) {
-            adBreakDuration += this.playlists[bw].items.PlaylistItem[i].get("cueout");
-            this.playlists[bw].items.PlaylistItem[i].set("cueout", null);
-            this.playlists[bw].items.PlaylistItem[i].set("cuein", false);
-          } else if (
-            this.playlists[bw].items.PlaylistItem[i].get("cueout") &&
-            !this.playlists[bw].items.PlaylistItem[i].get("cuein")
-          ) {
-            adBreakDuration = 0;
-            itemToUpdate = this.playlists[bw].items.PlaylistItem[i];
-          } else if (
-            !this.playlists[bw].items.PlaylistItem[i].get("cueout") &&
-            this.playlists[bw].items.PlaylistItem[i].get("cuein")
-          ) {
-            const cueOut = itemToUpdate.get("cueout");
-            itemToUpdate.set("cueout", Math.round(cueOut + adBreakDuration));
+          const currentItem = this.playlists[bw].items.PlaylistItem[i];
+          const hasCueout = currentItem.get("cueout");
+          const hasCuein = currentItem.get("cuein");
+          
+          if (hasCueout && !hasCuein) {
+            // Start of a new ad break
+            if (!inAdBreak) {
+              // First ad break - start accumulating
+              inAdBreak = true;
+              firstCueoutItem = currentItem;
+              totalAdDuration = hasCueout;
+            } else {
+              // Consecutive ad break - accumulate duration and nullify this cueout
+              totalAdDuration += hasCueout;
+              currentItem.set("cueout", null);
+            }
+          } else if (hasCueout && hasCuein) {
+            // Single segment with both cueout and cuein
+            if (!inAdBreak) {
+              // Start new break
+              inAdBreak = true;
+              firstCueoutItem = currentItem;
+              totalAdDuration = hasCueout;
+            } else {
+              // Consecutive break - accumulate and nullify
+              totalAdDuration += hasCueout;
+              currentItem.set("cueout", null);
+            }
+            // Clear cuein since we're in a break
+            currentItem.set("cuein", false);
+          } else if (!hasCueout && hasCuein) {
+            // End of ad break
+            if (inAdBreak) {
+              // Update the first cueout with total duration
+              if (firstCueoutItem) {
+                firstCueoutItem.set("cueout", Math.round(totalAdDuration));
+              }
+              // Reset for next potential break
+              inAdBreak = false;
+              firstCueoutItem = null;
+              totalAdDuration = 0;
+            }
           }
+        }
+        
+        // Handle case where we end with an ad break (no final cuein)
+        if (inAdBreak && firstCueoutItem) {
+          firstCueoutItem.set("cueout", Math.round(totalAdDuration));
         }
       }
       this.playlists[bw].set("playlistType", "VOD"); // Ensure playlist type is VOD
       return this.playlists[bw].toString().replace(/^\s*\n/gm, "");
     } catch (err) {
-      console.error(err);
       return new Error("Failed to get manifest. " + err);
     }
   }
@@ -798,29 +819,59 @@ class HLSSpliceVod {
   getAudioManifest(g, l) {
     try {
       if (this.mergeBreaks) {
-        let adBreakDuration = 0;
-        let itemToUpdate = null;
+        let totalAdDuration = 0;
+        let firstCueoutItem = null;
+        let inAdBreak = false;
+        
         for (let i = 0; i < this.playlistsAudio[g][l].items.PlaylistItem.length; i++) {
-          if (
-            this.playlistsAudio[g][l].items.PlaylistItem[i].get("cueout") &&
-            this.playlistsAudio[g][l].items.PlaylistItem[i].get("cuein")
-          ) {
-            adBreakDuration += this.playlistsAudio[g][l].items.PlaylistItem[i].get("cueout");
-            this.playlistsAudio[g][l].items.PlaylistItem[i].set("cueout", null);
-            this.playlistsAudio[g][l].items.PlaylistItem[i].set("cuein", false);
-          } else if (
-            this.playlistsAudio[g][l].items.PlaylistItem[i].get("cueout") &&
-            !this.playlistsAudio[g][l].items.PlaylistItem[i].get("cuein")
-          ) {
-            adBreakDuration = 0;
-            itemToUpdate = this.playlistsAudio[g][l].items.PlaylistItem[i];
-          } else if (
-            !this.playlistsAudio[g][l].items.PlaylistItem[i].get("cueout") &&
-            this.playlistsAudio[g][l].items.PlaylistItem[i].get("cuein")
-          ) {
-            const cueOut = itemToUpdate.get("cueout");
-            itemToUpdate.set("cueout", Math.round(cueOut + adBreakDuration));
+          const currentItem = this.playlistsAudio[g][l].items.PlaylistItem[i];
+          const hasCueout = currentItem.get("cueout");
+          const hasCuein = currentItem.get("cuein");
+          
+          if (hasCueout && !hasCuein) {
+            // Start of a new ad break
+            if (!inAdBreak) {
+              // First ad break - start accumulating
+              inAdBreak = true;
+              firstCueoutItem = currentItem;
+              totalAdDuration = hasCueout;
+            } else {
+              // Consecutive ad break - accumulate duration and nullify this cueout
+              totalAdDuration += hasCueout;
+              currentItem.set("cueout", null);
+            }
+          } else if (hasCueout && hasCuein) {
+            // Single segment with both cueout and cuein
+            if (!inAdBreak) {
+              // Start new break
+              inAdBreak = true;
+              firstCueoutItem = currentItem;
+              totalAdDuration = hasCueout;
+            } else {
+              // Consecutive break - accumulate and nullify
+              totalAdDuration += hasCueout;
+              currentItem.set("cueout", null);
+            }
+            // Clear cuein since we're in a break
+            currentItem.set("cuein", false);
+          } else if (!hasCueout && hasCuein) {
+            // End of ad break
+            if (inAdBreak) {
+              // Update the first cueout with total duration
+              if (firstCueoutItem) {
+                firstCueoutItem.set("cueout", Math.round(totalAdDuration));
+              }
+              // Reset for next potential break
+              inAdBreak = false;
+              firstCueoutItem = null;
+              totalAdDuration = 0;
+            }
           }
+        }
+        
+        // Handle case where we end with an ad break (no final cuein)
+        if (inAdBreak && firstCueoutItem) {
+          firstCueoutItem.set("cueout", Math.round(totalAdDuration));
         }
       }
       this.playlistsAudio[g][l].set("playlistType", "VOD"); // Ensure playlist type is VOD
@@ -833,29 +884,59 @@ class HLSSpliceVod {
   getSubtitleManifest(g, l) {
     try {
       if (this.mergeBreaks) {
-        let adBreakDuration = 0;
-        let itemToUpdate = null;
+        let totalAdDuration = 0;
+        let firstCueoutItem = null;
+        let inAdBreak = false;
+        
         for (let i = 0; i < this.playlistsSubtitle[g][l].items.PlaylistItem.length; i++) {
-          if (
-            this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cueout") &&
-            this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cuein")
-          ) {
-            adBreakDuration += this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cueout");
-            this.playlistsSubtitle[g][l].items.PlaylistItem[i].set("cueout", null);
-            this.playlistsSubtitle[g][l].items.PlaylistItem[i].set("cuein", false);
-          } else if (
-            this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cueout") &&
-            !this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cuein")
-          ) {
-            adBreakDuration = 0;
-            itemToUpdate = this.playlistsSubtitle[g][l].items.PlaylistItem[i];
-          } else if (
-            !this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cueout") &&
-            this.playlistsSubtitle[g][l].items.PlaylistItem[i].get("cuein")
-          ) {
-            const cueOut = itemToUpdate.get("cueout");
-            itemToUpdate.set("cueout", Math.round(cueOut + adBreakDuration));
+          const currentItem = this.playlistsSubtitle[g][l].items.PlaylistItem[i];
+          const hasCueout = currentItem.get("cueout");
+          const hasCuein = currentItem.get("cuein");
+          
+          if (hasCueout && !hasCuein) {
+            // Start of a new ad break
+            if (!inAdBreak) {
+              // First ad break - start accumulating
+              inAdBreak = true;
+              firstCueoutItem = currentItem;
+              totalAdDuration = hasCueout;
+            } else {
+              // Consecutive ad break - accumulate duration and nullify this cueout
+              totalAdDuration += hasCueout;
+              currentItem.set("cueout", null);
+            }
+          } else if (hasCueout && hasCuein) {
+            // Single segment with both cueout and cuein
+            if (!inAdBreak) {
+              // Start new break
+              inAdBreak = true;
+              firstCueoutItem = currentItem;
+              totalAdDuration = hasCueout;
+            } else {
+              // Consecutive break - accumulate and nullify
+              totalAdDuration += hasCueout;
+              currentItem.set("cueout", null);
+            }
+            // Clear cuein since we're in a break
+            currentItem.set("cuein", false);
+          } else if (!hasCueout && hasCuein) {
+            // End of ad break
+            if (inAdBreak) {
+              // Update the first cueout with total duration
+              if (firstCueoutItem) {
+                firstCueoutItem.set("cueout", Math.round(totalAdDuration));
+              }
+              // Reset for next potential break
+              inAdBreak = false;
+              firstCueoutItem = null;
+              totalAdDuration = 0;
+            }
           }
+        }
+        
+        // Handle case where we end with an ad break (no final cuein)
+        if (inAdBreak && firstCueoutItem) {
+          firstCueoutItem.set("cueout", Math.round(totalAdDuration));
         }
       }
       this.playlistsSubtitle[g][l].set("playlistType", "VOD"); // Ensure playlist type is VOD

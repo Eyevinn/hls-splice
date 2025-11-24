@@ -1,5 +1,5 @@
 const m3u8 = require("@eyevinn/m3u8");
-const request = require("request");
+const fetch = require("node-fetch");
 const url = require("url");
 //const _log = (s, i = 0) => console.log(JSON.stringify(s, null, 2), 2002 + i);
 /*
@@ -64,6 +64,15 @@ const findNearestBw = (bw, array) => {
   });
 };
 
+const _fetchAndPipe = (uri, parser) => {
+  return fetch(uri).then((res) => {
+    if (!res.ok) {
+      throw new Error(`Failed to fetch ${uri}: ${res.status} ${res.statusText}`);
+    }
+    res.body.pipe(parser);
+  });
+};
+
 class HLSSpliceVod {
   /**
    * Create an HLSSpliceVod instance
@@ -125,11 +134,7 @@ class HLSSpliceVod {
       });
 
       if (!_injectMasterManifest) {
-        try {
-          request({ uri: this.masterManifestUri, gzip: true }).pipe(parser);
-        } catch (exc) {
-          reject(exc);
-        }
+        _fetchAndPipe(this.masterManifestUri, parser).catch(reject);
       } else {
         _injectMasterManifest().pipe(parser);
       }
@@ -255,11 +260,7 @@ class HLSSpliceVod {
       });
 
       if (!_injectMasterManifest) {
-        try {
-          request({ uri: this.masterManifestUri, gzip: true }).pipe(parser);
-        } catch (exc) {
-          reject(exc);
-        }
+        _fetchAndPipe(this.masterManifestUri, parser).catch(reject);
       } else {
         _injectMasterManifest().pipe(parser);
       }
@@ -998,11 +999,7 @@ class HLSSpliceVod {
       });
 
       if (!_injectMediaManifest) {
-        try {
-          request({ uri: mediaManifestUri, gzip: true }).pipe(parser);
-        } catch (exc) {
-          reject(exc);
-        }
+        _fetchAndPipe(mediaManifestUri, parser).catch(reject);
       } else {
         _injectMediaManifest(bandwidth).pipe(parser);
       }
@@ -1076,11 +1073,7 @@ class HLSSpliceVod {
       });
 
       if (!_injectAudioManifest) {
-        try {
-          request({ uri: audioManifestUri, gzip: true }).pipe(parser);
-        } catch (exc) {
-          reject(exc);
-        }
+        _fetchAndPipe(audioManifestUri, parser).catch(reject);
       } else {
         _injectAudioManifest(group, lang).pipe(parser);
       }
@@ -1155,11 +1148,7 @@ class HLSSpliceVod {
       });
 
       if (!_injectSubtitleManifest) {
-        try {
-          request({ uri: subtitleManifestUri, gzip: true }).pipe(parser);
-        } catch (exc) {
-          reject(exc);
-        }
+        _fetchAndPipe(subtitleManifestUri, parser).catch(reject);
       } else {
         _injectSubtitleManifest(group, lang).pipe(parser);
       }
@@ -1231,16 +1220,8 @@ class HLSSpliceVod {
               rej(err);
             });
             if (!_injectAdMediaManifest) {
-              try {
-                this.logger(`GET: "${mediaManifestUrl}"`);
-                request({ uri: mediaManifestUrl, gzip: true })
-                  .on("error", (err) => {
-                    rej(err);
-                  })
-                  .pipe(mediaManifestParser);
-              } catch (err) {
-                rej(err);
-              }
+              this.logger(`GET: "${mediaManifestUrl}"`);
+              _fetchAndPipe(mediaManifestUrl, mediaManifestParser).catch(rej);
             } else {
               _injectAdMediaManifest(targetAdStreamItem.get("bandwidth")).pipe(mediaManifestParser);
             }
@@ -1285,16 +1266,8 @@ class HLSSpliceVod {
             });
 
             if (!_injectAdMediaManifest) {
-              try {
-                this.logger(`GET: "${mediaManifestUrl}"`);
-                request({ uri: mediaManifestUrl, gzip: true })
-                  .on("error", (err) => {
-                    rej(err);
-                  })
-                  .pipe(mediaManifestParser);
-              } catch (err) {
-                rej(err);
-              }
+              this.logger(`GET: "${mediaManifestUrl}"`);
+              _fetchAndPipe(mediaManifestUrl, mediaManifestParser).catch(rej);
             } else {
               _injectAdMediaManifest(targetStreamItem.get("bandwidth")).pipe(mediaManifestParser);
             }
@@ -1348,16 +1321,8 @@ class HLSSpliceVod {
               rej(err);
             });
             if (!_injectAdAudioManifest) {
-              try {
-                this.logger(`GET: "${audioManifestUrl}"`);
-                request({ uri: audioManifestUrl, gzip: true })
-                  .on("error", (err) => {
-                    rej(err);
-                  })
-                  .pipe(audioManifestParser);
-              } catch (err) {
-                rej(err);
-              }
+              this.logger(`GET: "${audioManifestUrl}"`);
+              _fetchAndPipe(audioManifestUrl, audioManifestParser).catch(rej);
             } else {
               _injectAdAudioManifest(g, l).pipe(audioManifestParser);
             }
@@ -1411,16 +1376,8 @@ class HLSSpliceVod {
               rej(err);
             });
             if (!_injectAdSubtitleManifest) {
-              try {
-                this.logger(`GET: "${subtitleManifestUrl}"`);
-                request({ uri: subtitleManifestUrl, gzip: true })
-                  .on("error", (err) => {
-                    rej(err);
-                  })
-                  .pipe(subtitleManifestParser);
-              } catch (err) {
-                rej(err);
-              }
+              this.logger(`GET: "${subtitleManifestUrl}"`);
+              _fetchAndPipe(subtitleManifestUrl, subtitleManifestParser).catch(rej);
             } else {
               _injectAdSubtitleManifest(g, l).pipe(subtitleManifestParser);
             }
@@ -1438,15 +1395,7 @@ class HLSSpliceVod {
       });
 
       if (!_injectAdMasterManifest) {
-        try {
-          request({ uri: manifestUri, gzip: true })
-            .on("error", (err) => {
-              reject(err);
-            })
-            .pipe(parser);
-        } catch (exc) {
-          reject(exc);
-        }
+        _fetchAndPipe(manifestUri, parser).catch(reject);
       } else {
         _injectAdMasterManifest().pipe(parser);
       }

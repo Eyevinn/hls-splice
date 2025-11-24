@@ -8,7 +8,7 @@
     "test": "jasmine",
     "postversion": "git push && git push --tags",
     "coverage": "nyc npm test && nyc report",
-    "coveralls": "nyc npm test && nyc report --reporter=text-lcov | coveralls"
+    "coveralls": "nyc npm test && nyc report --reporter=text-lcov"
   },
   "author": "Eyevinn Technology <work@eyevinn.se>",
   "contributors": [
@@ -21,9 +21,8 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "coveralls": "^3.0.11",
-    "jasmine": "^3.5.0",
-    "nyc": "^15.0.1"
+    "jasmine": "^5.1.2",
+    "nyc": "^15.1.0"
   },
   "dependencies": {
     "@eyevinn/m3u8": "^0.5.9",

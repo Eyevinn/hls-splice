@@ -64,12 +64,24 @@ const findNearestBw = (bw, array) => {
   });
 };
 
-const _fetchAndPipe = (uri, parser) => {
-  return fetch(uri).then((res) => {
+const _fetchAndPipe = (uri, parser, fetchImpl) => {
+  return (fetchImpl || fetch)(uri).then((res) => {
     if (!res.ok) {
       throw new Error(`Failed to fetch ${uri}: ${res.status} ${res.statusText}`);
     }
-    res.body.pipe(parser);
+    // Stay pending until the body is done, so a body that fails partway through
+    // rejects instead of being lost. This used to resolve the moment pipe() was
+    // called, and since pipe() does not forward errors, a truncated or destroyed
+    // body left the caller waiting on an "m3u" event that would never arrive.
+    // Callers only use the rejection path (`.catch(reject)`), so settling later
+    // is harmless. "close" is handled as well as "end" so the promise always
+    // settles even when the stream is destroyed without completing.
+    return new Promise((resolve, reject) => {
+      res.body.on("error", reject);
+      res.body.on("end", resolve);
+      res.body.on("close", resolve);
+      res.body.pipe(parser);
+    });
   });
 };
 
@@ -92,6 +104,7 @@ class HLSSpliceVod {
     this.bumperDuration = null;
     this.log = null;
     this.clearCueTagsInSource = null;
+    this.fetch = null; // optional fetch implementation, see options.fetch
     this.logger = (str) => {
       if (this.log) {
         console.log(str);
@@ -120,6 +133,9 @@ class HLSSpliceVod {
     if (options && options.dummySubtitleEndpoint) {
       this.dummySubtitleEndpoint = options.dummySubtitleEndpoint;
     }
+    if (options && options.fetch) {
+      this.fetch = options.fetch;
+    }
 
     this.cmafMapUri = { video: {}, audio: {}, subtitle: {} };
   }
@@ -134,7 +150,7 @@ class HLSSpliceVod {
       });
 
       if (!_injectMasterManifest) {
-        _fetchAndPipe(this.masterManifestUri, parser).catch(reject);
+        _fetchAndPipe(this.masterManifestUri, parser, this.fetch).catch(reject);
       } else {
         _injectMasterManifest().pipe(parser);
       }
@@ -260,7 +276,7 @@ class HLSSpliceVod {
       });
 
       if (!_injectMasterManifest) {
-        _fetchAndPipe(this.masterManifestUri, parser).catch(reject);
+        _fetchAndPipe(this.masterManifestUri, parser, this.fetch).catch(reject);
       } else {
         _injectMasterManifest().pipe(parser);
       }
@@ -999,7 +1015,7 @@ class HLSSpliceVod {
       });
 
       if (!_injectMediaManifest) {
-        _fetchAndPipe(mediaManifestUri, parser).catch(reject);
+        _fetchAndPipe(mediaManifestUri, parser, this.fetch).catch(reject);
       } else {
         _injectMediaManifest(bandwidth).pipe(parser);
       }
@@ -1073,7 +1089,7 @@ class HLSSpliceVod {
       });
 
       if (!_injectAudioManifest) {
-        _fetchAndPipe(audioManifestUri, parser).catch(reject);
+        _fetchAndPipe(audioManifestUri, parser, this.fetch).catch(reject);
       } else {
         _injectAudioManifest(group, lang).pipe(parser);
       }
@@ -1148,7 +1164,7 @@ class HLSSpliceVod {
       });
 
       if (!_injectSubtitleManifest) {
-        _fetchAndPipe(subtitleManifestUri, parser).catch(reject);
+        _fetchAndPipe(subtitleManifestUri, parser, this.fetch).catch(reject);
       } else {
         _injectSubtitleManifest(group, lang).pipe(parser);
       }
@@ -1221,7 +1237,7 @@ class HLSSpliceVod {
             });
             if (!_injectAdMediaManifest) {
               this.logger(`GET: "${mediaManifestUrl}"`);
-              _fetchAndPipe(mediaManifestUrl, mediaManifestParser).catch(rej);
+              _fetchAndPipe(mediaManifestUrl, mediaManifestParser, this.fetch).catch(rej);
             } else {
               _injectAdMediaManifest(targetAdStreamItem.get("bandwidth")).pipe(mediaManifestParser);
             }
@@ -1267,7 +1283,7 @@ class HLSSpliceVod {
 
             if (!_injectAdMediaManifest) {
               this.logger(`GET: "${mediaManifestUrl}"`);
-              _fetchAndPipe(mediaManifestUrl, mediaManifestParser).catch(rej);
+              _fetchAndPipe(mediaManifestUrl, mediaManifestParser, this.fetch).catch(rej);
             } else {
               _injectAdMediaManifest(targetStreamItem.get("bandwidth")).pipe(mediaManifestParser);
             }
@@ -1322,7 +1338,7 @@ class HLSSpliceVod {
             });
             if (!_injectAdAudioManifest) {
               this.logger(`GET: "${audioManifestUrl}"`);
-              _fetchAndPipe(audioManifestUrl, audioManifestParser).catch(rej);
+              _fetchAndPipe(audioManifestUrl, audioManifestParser, this.fetch).catch(rej);
             } else {
               _injectAdAudioManifest(g, l).pipe(audioManifestParser);
             }
@@ -1377,7 +1393,7 @@ class HLSSpliceVod {
             });
             if (!_injectAdSubtitleManifest) {
               this.logger(`GET: "${subtitleManifestUrl}"`);
-              _fetchAndPipe(subtitleManifestUrl, subtitleManifestParser).catch(rej);
+              _fetchAndPipe(subtitleManifestUrl, subtitleManifestParser, this.fetch).catch(rej);
             } else {
               _injectAdSubtitleManifest(g, l).pipe(subtitleManifestParser);
             }
@@ -1395,7 +1411,7 @@ class HLSSpliceVod {
       });
 
       if (!_injectAdMasterManifest) {
-        _fetchAndPipe(manifestUri, parser).catch(reject);
+        _fetchAndPipe(manifestUri, parser, this.fetch).catch(reject);
       } else {
         _injectAdMasterManifest().pipe(parser);
       }

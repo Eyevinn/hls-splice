@@ -24,24 +24,6 @@ hlsVod.load()
 })
 ```
 
-### Custom fetch implementation
-
-Manifests are fetched with [node-fetch](https://www.npmjs.com/package/node-fetch), which applies no
-timeout by default. An origin that accepts a connection but never responds will therefore leave the
-returned promise pending indefinitely. Pass `options.fetch` to supply your own implementation and
-apply whatever timeout, retry or instrumentation policy you need:
-
-```js
-const fetch = require('node-fetch');
-
-const hlsVod = new HLSSpliceVod('https://.../master.m3u8', {
-  fetch: (uri) => fetch(uri, { timeout: 2000 }),
-});
-```
-
-The implementation is called as `fetch(uri)` and must resolve to an object with `ok`, `status`,
-`statusText` and a readable `body`. When omitted, `node-fetch` is used as before.
-
 This example below illustrates what this library does. Consider this HLS VOD:
 
 ```

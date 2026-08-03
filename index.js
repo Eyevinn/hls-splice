@@ -1401,9 +1401,11 @@ class HLSSpliceVod {
           mediaManifestPromises.push(p);
         }
 
-        Promise.all(mediaManifestPromises).then(() => {
-          resolve(ad);
-        });
+        Promise.all(mediaManifestPromises)
+          .then(() => {
+            resolve(ad);
+          })
+          .catch(reject);
       });
 
       parser.on("error", (err) => {

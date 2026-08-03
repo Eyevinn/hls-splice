@@ -107,4 +107,35 @@ describe("HLSSpliceVod fetch handling", () => {
       await expectAsync(hlsVod.load()).toBeRejectedWithError(/404 Not Found/);
     });
   });
+
+  describe("ad rendition failures", () => {
+    it("rejects rather than hanging when an ad rendition fetch fails", async () => {
+      const { Readable } = require("stream");
+      const AD_MASTER = `#EXTM3U
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=4928000,RESOLUTION=960x540,CODECS="avc1.4d001f,mp4a.40.2"
+ad-media.m3u8
+`;
+      // Master manifests resolve; the rendition they point at fails. The ad path
+      // aggregates rendition fetches with Promise.all, so without a rejection
+      // handler this left insertAdAt pending forever and surfaced the failure as
+      // an unhandled rejection.
+      const fakeFetch = (uri) => {
+        if (uri.match(/ad-media\.m3u8$/)) {
+          return Promise.reject(new Error("rendition unavailable"));
+        }
+        const body = uri.match(/media\.m3u8$/) ? MEDIA_MANIFEST : MASTER_MANIFEST;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          body: Readable.from([uri.match(/\/ad\.ism\//) ? AD_MASTER : body]),
+        });
+      };
+
+      const hlsVod = new HLSSpliceVod("https://example.com/vod/master.m3u8", { fetch: fakeFetch });
+      await hlsVod.load();
+
+      await expectAsync(hlsVod.insertAdAt(0, "https://example.com/ad.ism/.m3u8")).toBeRejected();
+    });
+  });
 });

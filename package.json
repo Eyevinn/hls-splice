@@ -22,7 +22,7 @@
   "license": "MIT",
   "devDependencies": {
     "jasmine": "^5.1.2",
-    "nyc": "^15.1.0"
+    "nyc": "^18.0.0"
   },
   "dependencies": {
     "@eyevinn/m3u8": "^0.5.9",
